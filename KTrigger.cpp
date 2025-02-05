@@ -339,18 +339,18 @@ Render(
 		PF_FpLong state = 0;
 		const A_long offset_count = params[OFFSET_COUNT_DISK_ID]->u.fs_d.value;
 		if (params[IS_CONTROL_DISK_ID]->u.bd.value) {
-			PF_ParamDef* ckey;
+			PF_ParamDef ckey;
 			AEFX_CLR_STRUCT(ckey);
 			ERR(suites.ParamUtilsSuite3()->PF_CheckoutKeyframe(in_data->effect_ref,
 				SKELETON_GAIN,
 				i,
 				NULL,
 				NULL,
-				ckey));
-			state = ckey ? ckey->u.fs_d.value : 0;
+				&ckey));
+			state = ckey.u.fs_d.value;
 			ERR(suites.ParamUtilsSuite3()->PF_CheckinKeyframe(
-				in_data->effect_ref,
-				ckey));
+					in_data->effect_ref,
+					&ckey));
 		}
 		else {
 			if (offset_count > 0) {
