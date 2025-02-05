@@ -35,8 +35,8 @@ About (
 	suites.ANSICallbacksSuite1()->sprintf(	out_data->return_msg,
 											"%s v%d.%d\r%s",
 											STR(StrID_Name), 
-											MAJOR_VERSION, 
-											MINOR_VERSION, 
+											REAL_MAJOR_VERSION,
+											REAL_MINOR_VERSION,
 											STR(StrID_Description));
 	return PF_Err_NONE;
 }

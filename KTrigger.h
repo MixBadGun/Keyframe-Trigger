@@ -69,12 +69,15 @@ typedef short int			int16;
 #define	STAGE_VERSION	PF_Stage_DEVELOP
 #define	BUILD_VERSION	1
 
+// 搞不懂 Adobe 怎么搞的版本号，我自己来一个
+#define	REAL_MAJOR_VERSION	1
+#define	REAL_MINOR_VERSION	2
 
 /* Parameter defaults */
 
-#define	SKELETON_GAIN_MIN		0
-#define	SKELETON_GAIN_MAX		100
-#define	SKELETON_GAIN_DFLT		10
+#define	SKELETON_GAIN_MIN		-1000
+#define	SKELETON_GAIN_MAX		1000
+#define	SKELETON_GAIN_DFLT		0
 
 enum {
 	SKELETON_INPUT = 0,
