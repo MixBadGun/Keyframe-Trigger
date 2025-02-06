@@ -20,6 +20,7 @@
 /*******************************************************************/
 
 #include "KTrigger.h"
+#include <string>
 
 static AEGP_PluginID* Plugin_ID;
 
@@ -57,6 +58,7 @@ GlobalSetup (
 										BUILD_VERSION);
 
 	out_data->out_flags = PF_OutFlag_NON_PARAM_VARY + PF_OutFlag_DEEP_COLOR_AWARE;
+	out_data->out_flags2 = PF_OutFlag2_SUPPORTS_THREADED_RENDERING;
 	//out_data->out_flags = PF_OutFlag_DEEP_COLOR_AWARE;
 	return PF_Err_NONE;
 }
@@ -308,8 +310,43 @@ Render(
 	ERR(suites.ParamUtilsSuite3()->PF_GetKeyframeCount(in_data->effect_ref,
 		SKELETON_GAIN,
 		&keyframes));
+	// 找到在可渲染范围内的第一个帧的索引
+	PF_KeyIndex findex = 0;
+	PF_Boolean fhasKey = false;
+	A_long fkey_time = 0;
+	A_u_long fkey_time_scale = 0;
+	ERR(suites.ParamUtilsSuite3()->PF_FindKeyframeTime(in_data->effect_ref,
+		SKELETON_GAIN,
+		ctime,
+		in_data->time_scale,
+		PF_TimeDir_LESS_THAN_OR_EQUAL,
+		&fhasKey,
+		&findex,
+		&fkey_time,
+		&fkey_time_scale
+	));
+	if(fhasKey){
+		PF_FpLong ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
+		const PF_FpLong fmax_cache = params[MAX_DUR_DISK_ID]->u.fs_d.value;
+		while(ftime < fmax_cache){
+			if (!(findex > 0)) {
+				break;
+			}
+			findex -= 1;
+			ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
+				in_data->effect_ref,
+				SKELETON_GAIN,
+				findex,
+				&fkey_time,
+				&fkey_time_scale));
+			ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
+		}
+	}
+	else {
+		findex = 0;
+	}
 	// 从第一帧开始遍历，如果在时间范围内就叠加上去
-	for (int i = 0;i < keyframes;i++) {
+	for (int i = findex;i < keyframes;i++) {
 		A_long key_time = 0;
 		A_u_long key_time_scale = 0;
 		ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
@@ -318,9 +355,12 @@ Render(
 			i,
 			&key_time,
 			&key_time_scale));
+		// 如果遍历到最后一个帧，则直接跳出
+		if (ctime < key_time) {
+			break;
+		}
 		// 如果在时间范围外，则忽略
-		if (ctime < key_time ||
-			ctime - key_time > in_data->total_time){
+		if (ctime - key_time > in_data->total_time){
 			continue;
 		}
 		// 最大缓存量（秒）
