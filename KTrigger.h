@@ -64,14 +64,17 @@ typedef short int			int16;
 /* Versioning information */
 
 #define	MAJOR_VERSION	1
-#define	MINOR_VERSION	1
+#define	MINOR_VERSION	3
 #define	BUG_VERSION		0
 #define	STAGE_VERSION	PF_Stage_DEVELOP
 #define	BUILD_VERSION	1
 
-// 搞不懂 Adobe 怎么搞的版本号，我自己来一个
-#define	REAL_MAJOR_VERSION	1
-#define	REAL_MINOR_VERSION	2
+/* RESOURCE_VERSION =
+MAJOR_VERSION * 524288 +
+MINOR_VERSION * 32768 +
+BUG_VERSION * 2048 + BUG_VERSION * 2048 +
+STAGE_VERSION * 512 + STAGE_VERSION * 512 +
+BUILD_VERSION */
 
 /* Parameter defaults */
 

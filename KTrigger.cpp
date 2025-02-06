@@ -35,8 +35,8 @@ About (
 	suites.ANSICallbacksSuite1()->sprintf(	out_data->return_msg,
 											"%s v%d.%d\r%s",
 											STR(StrID_Name), 
-											REAL_MAJOR_VERSION,
-											REAL_MINOR_VERSION,
+											MAJOR_VERSION,
+											MINOR_VERSION,
 											STR(StrID_Description));
 	return PF_Err_NONE;
 }
@@ -56,7 +56,8 @@ GlobalSetup (
 										STAGE_VERSION, 
 										BUILD_VERSION);
 
-	out_data->out_flags = PF_OutFlag_NON_PARAM_VARY;
+	out_data->out_flags = PF_OutFlag_NON_PARAM_VARY + PF_OutFlag_DEEP_COLOR_AWARE;
+	//out_data->out_flags = PF_OutFlag_DEEP_COLOR_AWARE;
 	return PF_Err_NONE;
 }
 
@@ -84,7 +85,7 @@ ParamsSetup (
 							0,
 							GAIN_DISK_ID);
 
-							AEFX_CLR_STRUCT(def);
+	AEFX_CLR_STRUCT(def);
 
 	// 控制器影响
 	PF_ADD_CHECKBOXX(STR(StrID_Is_Control_Param_Name),
@@ -282,9 +283,14 @@ Render(
 	PF_Err				err = PF_Err_NONE;
 	AEGP_SuiteHandler	suites(in_data->pica_basicP);
 
-	/*	Put interesting code here. */
 	GainInfo			giP;
 	AEFX_CLR_STRUCT(giP);
+
+	PF_Boolean			deepB = PF_WORLD_IS_DEEP(output); // 是否为16位
+	PF_NewWorldFlags	flags = PF_NewWorldFlag_CLEAR_PIXELS;
+	if (deepB) {
+		flags |= PF_NewWorldFlag_DEEP_PIXELS;
+	}
 
 	// 初始化背景与混合模式
 
@@ -325,6 +331,17 @@ Render(
 				continue;
 			}
 		}
+		// 新世界并初始化
+		const A_long widthL = in_data->extent_hint.right - in_data->extent_hint.left;
+		const A_long heightL = in_data->extent_hint.bottom - in_data->extent_hint.top;
+		PF_EffectWorld cworld;
+		AEFX_CLR_STRUCT(cworld);
+		ERR(PF_NEW_WORLD(
+			widthL,
+			heightL,
+			flags,
+			&cworld));
+		//ERR(PF_FILL(&transparent_black, NULL, &cworld));
 		// 获取相应时间画面
 		PF_ParamDef imageDef;
 		AEFX_CLR_STRUCT(imageDef);
@@ -335,6 +352,31 @@ Render(
 			in_data->time_step,
 			in_data->time_scale,
 			&imageDef));
+		// 给 cworld 赋值，水平翻转
+		if (params[IS_FLIP_DISK_ID]->u.bd.value && i % 2 == 1) {
+			PF_FloatMatrix flip_matrix;
+			Flip2Matrix(
+				widthL,
+				heightL,
+				&flip_matrix);
+			ERR(in_data->utils->transform_world(
+				in_data->effect_ref,
+				in_data->quality,
+				in_data->in_flags,
+				in_data->field,
+				&imageDef.u.ld,
+				&composite_mode,
+				NULL,
+				&flip_matrix,
+				1,
+				true,
+				&imageDef.u.ld.extent_hint,
+				&cworld)
+			);
+		}
+		else {
+			ERR(PF_COPY(&imageDef.u.ld, &cworld, NULL, NULL));
+		}
 		// 获取当前帧数据（如果启用，否则为索引）
 		PF_FpLong state = 0;
 		const A_long offset_count = params[OFFSET_COUNT_DISK_ID]->u.fs_d.value;
@@ -382,38 +424,6 @@ Render(
 			}
 			
 		}
-		// 水平翻转
-		if (params[IS_FLIP_DISK_ID]->u.bd.value && i % 2 == 1) {
-			PF_EffectWorld cworld;
-			AEFX_CLR_STRUCT(cworld);
-			ERR(PF_NEW_WORLD(
-				imageDef.u.ld.width,
-				imageDef.u.ld.height,
-				NULL,
-				&cworld));
-			PF_FloatMatrix flip_matrix;
-			Flip2Matrix(
-				in_data->extent_hint.right - in_data->extent_hint.left,
-				in_data->extent_hint.bottom - in_data->extent_hint.top,
-				&flip_matrix);
-			ERR(in_data->utils->transform_world(
-				in_data->effect_ref,
-				in_data->quality,
-				in_data->in_flags,
-				in_data->field,
-				&imageDef.u.ld,
-				&composite_mode,
-				NULL,
-				&flip_matrix,
-				1,
-				true,
-				&in_data->extent_hint,
-				&cworld)
-			);
-			imageDef.u.ld = cworld;
-			//PF_COPY(&cworld, &imageDef.u.ld, NULL, NULL);
-			//PF_DISPOSE_WORLD(&cworld);
-		}
 		// 混合进新画面中
 		switch (params[SWITCH_DISK_ID]->u.pd.value) {
 		case 1: {
@@ -426,7 +436,7 @@ Render(
 				in_data->in_flags,
 				in_data->field,
 				&in_data->extent_hint,
-				&imageDef.u.ld,
+				&cworld,
 				&composite_mode,
 				NULL,
 				state * x_offset,
@@ -448,7 +458,7 @@ Render(
 					in_data->quality,
 					in_data->in_flags,
 					in_data->field,
-					&imageDef.u.ld,
+					&cworld,
 					&composite_mode,
 					NULL,
 					&matrix,
@@ -464,6 +474,7 @@ Render(
 		}
 		}
 		ERR(PF_CHECKIN_PARAM(in_data, &imageDef));
+		ERR(PF_DISPOSE_WORLD(&cworld));
 	}
 
 	return err;
