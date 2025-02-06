@@ -41,7 +41,7 @@ resource 'PiPL' (16000) {
 		},
 		/* [8] */
 		AE_Effect_Version {
-			655361	/* 1.4 */
+			688129	/* 1.5 */
 		},
 		/* [9] */
 		AE_Effect_Info_Flags {
@@ -61,10 +61,6 @@ resource 'PiPL' (16000) {
 		/* [12] */
 		AE_Reserved_Info {
 			0
-		},
-		/* [13] */
-		AE_Effect_Support_URL {
-			"https://otm.ink/"
 		}
 	}
 };
