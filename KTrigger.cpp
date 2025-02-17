@@ -56,8 +56,9 @@ GlobalSetup (
 										STAGE_VERSION, 
 										BUILD_VERSION);
 
-	out_data->out_flags = PF_OutFlag_NON_PARAM_VARY + PF_OutFlag_DEEP_COLOR_AWARE;
-	out_data->out_flags2 = PF_OutFlag2_SUPPORTS_THREADED_RENDERING;
+	out_data->out_flags |=	PF_OutFlag_NON_PARAM_VARY |
+							PF_OutFlag_DEEP_COLOR_AWARE;
+	out_data->out_flags2 |= PF_OutFlag2_SUPPORTS_THREADED_RENDERING;
 	//out_data->out_flags = PF_OutFlag_DEEP_COLOR_AWARE;
 	return PF_Err_NONE;
 }
@@ -161,7 +162,7 @@ ParamsSetup (
 	PF_ADD_POINT(STR(StrID_Offset_Param_Name),
 		0,
 		0,
-		10000,
+		0,
 		OFFSET_DISK_ID
 	);
 
@@ -260,6 +261,17 @@ static void Scale2Matrix(A_long width, A_long height, PF_FpLong scale, A_Boolean
 
 	(*transform_matrix).mat[2][2] = 1;
 	//(*transform_matrix).mat[2][1] = height;
+}
+
+static void Translate2Matrix(PF_FpLong x_offset, PF_FpLong y_offset, PF_FloatMatrix* transform_matrix) {
+
+	(*transform_matrix).mat[0][0] = 1;
+
+	(*transform_matrix).mat[1][1] = 1;
+
+	(*transform_matrix).mat[2][2] = 1;
+	(*transform_matrix).mat[2][0] = x_offset;
+	(*transform_matrix).mat[2][1] = y_offset;
 }
 
 
@@ -566,6 +578,23 @@ Render(
 				x_offset = FIX_2_FLOAT(params[OFFSET_DISK_ID]->u.td.x_value);
 				y_offset = FIX_2_FLOAT(params[OFFSET_DISK_ID]->u.td.y_value);
 			}
+
+			//PF_FloatMatrix matrix;
+			//Translate2Matrix(x_offset, y_offset, &matrix);
+			//ERR(in_data->utils->transform_world(
+			//	in_data->effect_ref,
+			//	in_data->quality,
+			//	in_data->in_flags,
+			//	in_data->field,
+			//	&cworld,
+			//	&composite_mode,
+			//	NULL,
+			//	&matrix,
+			//	1,
+			//	true,
+			//	&in_data->extent_hint,
+			//	output)
+			//);
 
 			ERR(in_data->utils->transfer_rect(
 				in_data->effect_ref,
