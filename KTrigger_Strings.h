@@ -27,6 +27,8 @@ typedef enum {
 	StrID_Description,
 	StrID_Gain_Param_Name,
 	StrID_Is_Control_Param_Name,
+	StrID_Is_Frozen_Name,
+	StrID_Scale_Size_Name,
 	StrID_Is_Flip_Param_Name,
 	StrID_Switch_Param_Name,
 	StrID_Switch_Popup_Choices,
@@ -42,6 +44,7 @@ typedef enum {
 	StrID_Max_Dur_Name,
 	StrID_Xfer_Mode_Name,
 	StrID_Xfer_Mode_Choices,
+	StrID_Second_Layer_Name,
 	StrID_Random_Name,
 	StrID_NUMTYPES
 } StrIDType;

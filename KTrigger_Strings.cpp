@@ -34,6 +34,8 @@ TableString		g_strs[StrID_NUMTYPES] = {
 	StrID_Description,				"通过关键帧触发以克隆图层的效果, Made by 坏枪.",
 	StrID_Gain_Param_Name,			"控制器",
 	StrID_Is_Control_Param_Name,	"控制器影响偏移",
+	StrID_Is_Frozen_Name,			"生成后冻结状态",
+	StrID_Scale_Size_Name,			"缩放大小",
 	StrID_Is_Flip_Param_Name,		"水平翻转",
 	StrID_Switch_Param_Name,		"偏移模式",
 	StrID_Switch_Popup_Choices,		"位置|"
@@ -70,6 +72,7 @@ TableString		g_strs[StrID_NUMTYPES] = {
 									"排除|"
 									"相减|"
 									"相除",
+	StrID_Second_Layer_Name,		"第二图层",
 	StrID_Random_Name,				"用来刷新渲染的笨笨滑条",
 };
 

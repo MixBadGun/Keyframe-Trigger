@@ -34,4 +34,5 @@
 .vs
 x64
 x86
+Win32
 debug

@@ -95,6 +95,24 @@ ParamsSetup (
 		IS_CONTROL_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
+	// 冻结已有生成
+	PF_ADD_CHECKBOXX(STR(StrID_Is_Frozen_Name),
+		false,
+		0,
+		IS_FROZEN_DISK_ID);
+	AEFX_CLR_STRUCT(def);
+	// 单独缩放
+	PF_ADD_FLOAT_SLIDERX(STR(StrID_Scale_Size_Name),
+		0,
+		1000,
+		0,
+		400,
+		100,
+		PF_Precision_HUNDREDTHS,
+		PF_ValueDisplayFlag_PERCENT,
+		0,
+		SCALE_SIZE_DISK_ID);
+	AEFX_CLR_STRUCT(def);
 	// 水平翻转
 	PF_ADD_CHECKBOXX(STR(StrID_Is_Flip_Param_Name),
 		false,
@@ -190,7 +208,11 @@ ParamsSetup (
 	1,
 	STR(StrID_Xfer_Mode_Choices),
 	XFER_MODE_DISK_ID);
-
+	// 第二图层
+	AEFX_CLR_STRUCT(def);
+	PF_ADD_LAYER(STR(StrID_Second_Layer_Name),
+		PF_LayerDefault_NONE,
+		SECOND_LAYER_DISK_ID);
 	AEFX_CLR_STRUCT(def);
 	// 用于刷新用的破滑条
 	PF_ADD_FLOAT_SLIDERX(STR(StrID_Random_Name),
@@ -224,15 +246,19 @@ static void Angle2Matrix(PF_FpLong angle, A_long width, A_long height, PF_FpLong
 	(*transform_matrix).mat[2][1] = height / 2;
 }
 
-static void Flip2Matrix(A_long width, A_long height, PF_FloatMatrix* transform_matrix) {
+static void Scale2Matrix(A_long width, A_long height, PF_FpLong scale, A_Boolean is_flip, PF_FloatMatrix* transform_matrix) {
 
-	(*transform_matrix).mat[0][0] = -1;
-
-	(*transform_matrix).mat[1][1] = 1;
+	if (is_flip) {
+		(*transform_matrix).mat[0][0] = -1 * scale;
+		(*transform_matrix).mat[2][0] = width * scale;
+	}
+	else {
+		(*transform_matrix).mat[0][0] = 1 * scale;
+	}
+	
+	(*transform_matrix).mat[1][1] = 1 * scale;
 
 	(*transform_matrix).mat[2][2] = 1;
-
-	(*transform_matrix).mat[2][0] = width;
 	//(*transform_matrix).mat[2][1] = height;
 }
 
@@ -370,6 +396,7 @@ Render(
 				continue;
 			}
 		}
+
 		// 新世界并初始化
 		const A_long widthL = in_data->extent_hint.right - in_data->extent_hint.left;
 		const A_long heightL = in_data->extent_hint.bottom - in_data->extent_hint.top;
@@ -381,41 +408,92 @@ Render(
 			flags,
 			&cworld));
 		//ERR(PF_FILL(&transparent_black, NULL, &cworld));
-		// 获取相应时间画面
+		// 获取相应时间画面，如果是当前帧则用当前画面
+		// 判断是否为当前帧
+		bool is_now = true;
 		PF_ParamDef imageDef;
 		AEFX_CLR_STRUCT(imageDef);
 		ERR(PF_CHECKOUT_PARAM(
 			in_data,
-			PF_Param_LAYER,
+			SECOND_LAYER_DISK_ID,
 			ctime - key_time,
 			in_data->time_step,
 			in_data->time_scale,
 			&imageDef));
+		if (imageDef.u.ld.data) {
+			if (i + 1 < keyframes) {
+				A_long next_key_time = 0;
+				A_u_long next_key_time_scale = 0;
+				ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
+					in_data->effect_ref,
+					SKELETON_GAIN,
+					i + 1,
+					&next_key_time,
+					&next_key_time_scale));
+				if (ctime >= next_key_time) {
+					is_now = false;
+				}
+			}
+		}
+		if (is_now) {
+			ERR(PF_CHECKIN_PARAM(in_data, &imageDef));
+			// AEFX_CLR_STRUCT(imageDef);
+			ERR(PF_CHECKOUT_PARAM(
+				in_data,
+				PF_Param_LAYER,
+				ctime - key_time,
+				in_data->time_step,
+				in_data->time_scale,
+				&imageDef));
+		}
+		
 		// 给 cworld 赋值，水平翻转
+		A_Boolean is_flip = false;
 		if (params[IS_FLIP_DISK_ID]->u.bd.value && i % 2 == 1) {
-			PF_FloatMatrix flip_matrix;
-			Flip2Matrix(
-				widthL,
-				heightL,
-				&flip_matrix);
-			ERR(in_data->utils->transform_world(
-				in_data->effect_ref,
-				in_data->quality,
-				in_data->in_flags,
-				in_data->field,
-				&imageDef.u.ld,
-				&composite_mode,
-				NULL,
-				&flip_matrix,
-				1,
-				true,
-				&imageDef.u.ld.extent_hint,
-				&cworld)
-			);
+			is_flip = true;
 		}
-		else {
-			ERR(PF_COPY(&imageDef.u.ld, &cworld, NULL, NULL));
+		PF_FpLong scale_size = 1;
+		if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
+			PF_ParamDef currentDef;
+			AEFX_CLR_STRUCT(currentDef);
+			ERR(PF_CHECKOUT_PARAM(
+				in_data,
+				SCALE_SIZE_DISK_ID,
+				key_time,
+				in_data->time_step,
+				in_data->time_scale,
+				&currentDef));
+			scale_size = currentDef.u.fs_d.value / 100;
+			ERR(PF_CHECKIN_PARAM(
+				in_data, &currentDef));
+		} else {
+			scale_size = params[SCALE_SIZE_DISK_ID]->u.fs_d.value / 100;
 		}
+		PF_FloatMatrix flip_matrix;
+		AEFX_CLR_STRUCT(flip_matrix);
+		Scale2Matrix(
+			widthL,
+			heightL,
+			scale_size,
+			is_flip,
+			&flip_matrix);
+		ERR(in_data->utils->transform_world(
+			in_data->effect_ref,
+			in_data->quality,
+			in_data->in_flags,
+			in_data->field,
+			&imageDef.u.ld,
+			&composite_mode,
+			NULL,
+			&flip_matrix,
+			1,
+			true,
+			&imageDef.u.ld.extent_hint,
+			&cworld)
+		);
+		//else {
+		//	ERR(PF_COPY(&imageDef.u.ld, &cworld, NULL, NULL));
+		//}
 		// 获取当前帧数据（如果启用，否则为索引）
 		PF_FpLong state = 0;
 		const A_long offset_count = params[OFFSET_COUNT_DISK_ID]->u.fs_d.value;
@@ -466,8 +544,28 @@ Render(
 		// 混合进新画面中
 		switch (params[SWITCH_DISK_ID]->u.pd.value) {
 		case 1: {
-			PF_FpLong x_offset = FIX_2_FLOAT(params[OFFSET_DISK_ID]->u.td.x_value);
-			PF_FpLong y_offset = FIX_2_FLOAT(params[OFFSET_DISK_ID]->u.td.y_value);
+			PF_FpLong x_offset = 0;
+			PF_FpLong y_offset = 0;
+			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
+				PF_ParamDef currentDef;
+				AEFX_CLR_STRUCT(currentDef);
+				ERR(PF_CHECKOUT_PARAM(
+					in_data,
+					OFFSET_DISK_ID,
+					key_time,
+					in_data->time_step,
+					in_data->time_scale,
+					&currentDef));
+				x_offset = FIX_2_FLOAT(currentDef.u.td.x_value);
+				y_offset = FIX_2_FLOAT(currentDef.u.td.y_value);
+				ERR(PF_CHECKIN_PARAM(
+					in_data, &currentDef
+				));
+			}
+			else {
+				x_offset = FIX_2_FLOAT(params[OFFSET_DISK_ID]->u.td.x_value);
+				y_offset = FIX_2_FLOAT(params[OFFSET_DISK_ID]->u.td.y_value);
+			}
 
 			ERR(in_data->utils->transfer_rect(
 				in_data->effect_ref,
@@ -485,7 +583,25 @@ Render(
 			break;
 		}
 		case 2: {
-			const PF_FpLong angle = FIX_2_FLOAT(params[ROTATE_DISK_ID]->u.ad.value) * state;
+			PF_FpLong angle = 0;
+			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
+				PF_ParamDef currentDef;
+				AEFX_CLR_STRUCT(currentDef);
+				ERR(PF_CHECKOUT_PARAM(
+					in_data,
+					ROTATE_DISK_ID,
+					key_time,
+					in_data->time_step,
+					in_data->time_scale,
+					&currentDef));
+				angle = FIX_2_FLOAT(currentDef.u.ad.value) * state;
+				ERR(PF_CHECKIN_PARAM(
+					in_data, &currentDef
+				));
+			}
+			else {
+				angle = FIX_2_FLOAT(params[ROTATE_DISK_ID]->u.ad.value) * state;
+			}
 			PF_FloatMatrix matrix;
 			Angle2Matrix(angle, 
 				in_data->extent_hint.right - in_data->extent_hint.left,
