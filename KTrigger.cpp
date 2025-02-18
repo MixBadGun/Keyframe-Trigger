@@ -243,8 +243,8 @@ static void Angle2Matrix(PF_FpLong angle, A_long width, A_long height, PF_FpLong
 
 	(*transform_matrix).mat[2][2] = 1;
 
-	(*transform_matrix).mat[2][0] = width / 2;
-	(*transform_matrix).mat[2][1] = height / 2;
+	(*transform_matrix).mat[2][0] = (double)width / 2;
+	(*transform_matrix).mat[2][1] = (double)height / 2;
 }
 
 static void Scale2Matrix(A_long width, A_long height, PF_FpLong scale, A_Boolean is_flip, PF_FloatMatrix* transform_matrix) {
