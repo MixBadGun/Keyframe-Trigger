@@ -94,6 +94,10 @@
     </ClCompile>
     <ClCompile Include="..\KTrigger.cpp" />
     <ClCompile Include="..\KTrigger_Strings.cpp" />
+    <ClCompile Include="..\..\..\Util\Smart_Utils.cpp">
+      <Filter>Supporting code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\KTrigger_Func.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\SkeletonPiPL.r">

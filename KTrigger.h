@@ -58,13 +58,14 @@ typedef short int			int16;
 #include "AEGP_SuiteHandler.h"
 
 #include "KTrigger_Strings.h"
+#include <vector>
 
 #define PLUGIN_ID "Keyframe Trigger"
 
 /* Versioning information */
 
-#define	MAJOR_VERSION	1
-#define	MINOR_VERSION	8
+#define	MAJOR_VERSION	2
+#define	MINOR_VERSION	0
 #define	BUG_VERSION		0
 #define	STAGE_VERSION	PF_Stage_RELEASE
 #define	BUILD_VERSION	1
@@ -87,6 +88,7 @@ enum {
 	SKELETON_GAIN,
 	IS_CONTROL_DISK,
 	IS_FROZEN_DISK,
+	ANCHOR_DISK,
 	SCALE_SIZE_DISK,
 	IS_FLIP_DISK,
 	SWITCH_DISK,
@@ -113,6 +115,7 @@ enum {
 	GAIN_DISK_ID = 1,
 	IS_CONTROL_DISK_ID,
 	IS_FROZEN_DISK_ID,
+	ANCHOR_DISK_ID,
 	SCALE_SIZE_DISK_ID,
 	IS_FLIP_DISK_ID,
 	SWITCH_DISK_ID,
@@ -137,6 +140,16 @@ enum {
 typedef struct GainInfo{
 	PF_FpLong	gainF;
 } GainInfo, *GainInfoP, **GainInfoH;
+
+typedef struct LayerInfo {
+	A_long idL;
+	PF_FloatMatrix matrix;
+};
+
+typedef struct LayerPack {
+	A_long     xfer;
+	std::vector<LayerInfo> pack;
+} LayerPack;
 
 extern "C" {
 

@@ -35,6 +35,7 @@ TableString		g_strs[StrID_NUMTYPES] = {
 	StrID_Gain_Param_Name,			"控制器",
 	StrID_Is_Control_Param_Name,	"控制器影响偏移",
 	StrID_Is_Frozen_Name,			"生成后冻结状态",
+	StrID_Anchor_Param_Name,		"锚点",
 	StrID_Scale_Size_Name,			"缩放大小",
 	StrID_Is_Flip_Param_Name,		"水平翻转",
 	StrID_Switch_Param_Name,		"偏移模式",

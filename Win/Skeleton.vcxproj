@@ -370,7 +370,9 @@ cl /D "MSWindows" /EP $(IntDir)%(Filename).rrc &gt;               "$(ProjectDir)
   <ItemGroup>
     <ClCompile Include="..\..\..\Util\AEGP_SuiteHandler.cpp" />
     <ClCompile Include="..\..\..\Util\MissingSuiteError.cpp" />
+    <ClCompile Include="..\..\..\Util\Smart_Utils.cpp" />
     <ClCompile Include="..\KTrigger.cpp" />
+    <ClCompile Include="..\KTrigger_Func.cpp" />
     <ClCompile Include="..\KTrigger_Strings.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

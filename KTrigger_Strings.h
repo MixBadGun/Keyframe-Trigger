@@ -28,6 +28,7 @@ typedef enum {
 	StrID_Gain_Param_Name,
 	StrID_Is_Control_Param_Name,
 	StrID_Is_Frozen_Name,
+	StrID_Anchor_Param_Name,
 	StrID_Scale_Size_Name,
 	StrID_Is_Flip_Param_Name,
 	StrID_Switch_Param_Name,
