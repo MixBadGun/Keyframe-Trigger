@@ -116,7 +116,7 @@ ParamsSetup (
 		100,
 		0,
 		2,
-		0,
+		1,
 		PF_Precision_HUNDREDTHS,
 		0,
 		0,
