@@ -86,13 +86,41 @@ ParamsSetup (
 	PF_ADD_FLOAT_SLIDERX(	STR(StrID_Gain_Param_Name), 
 							SKELETON_GAIN_MIN,
 							SKELETON_GAIN_MAX,
-							SKELETON_GAIN_MIN,
-							SKELETON_GAIN_MAX,
+							-10,
+							10,
 							SKELETON_GAIN_DFLT,
 							PF_Precision_HUNDREDTHS,
 							0,
 							0,
 							GAIN_DISK_ID);
+
+	AEFX_CLR_STRUCT(def);
+
+	// 起始时间
+	PF_ADD_FLOAT_SLIDERX(STR(StrID_Start_Time_Param_Name),
+		0,
+		1000000,
+		0,
+		100,
+		0,
+		PF_Precision_HUNDREDTHS,
+		0,
+		0,
+		START_TIME_DISK_ID);
+
+	AEFX_CLR_STRUCT(def);
+
+	// 播放速率
+	PF_ADD_FLOAT_SLIDERX(STR(StrID_Playrate_Param_Name),
+		-100,
+		100,
+		0,
+		2,
+		0,
+		PF_Precision_HUNDREDTHS,
+		0,
+		0,
+		PLAYRATE_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
 
@@ -103,7 +131,7 @@ ParamsSetup (
 		IS_CONTROL_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
-	// 冻结已有生成
+	// 冻结已有生成状态
 	PF_ADD_CHECKBOXX(STR(StrID_Is_Frozen_Name),
 		false,
 		0,
@@ -441,6 +469,37 @@ Render(
 		const A_long widthL = in_data->extent_hint.right - in_data->extent_hint.left;
 		const A_long heightL = in_data->extent_hint.bottom - in_data->extent_hint.top;
 
+		// 获取开始时间
+		PF_ParamDef startTimeDef;
+		AEFX_CLR_STRUCT(startTimeDef);
+		ERR(PF_CHECKOUT_PARAM(
+			in_data,
+			START_TIME_DISK_ID,
+			key_time,
+			in_data->time_step,
+			in_data->time_scale,
+			&startTimeDef));
+		A_long const start_key_time = startTimeDef.u.fs_d.value * key_time_scale;
+		PF_CHECKIN_PARAM(in_data, &startTimeDef);
+
+		// 获取播放速率
+		PF_ParamDef playrateDef;
+		AEFX_CLR_STRUCT(playrateDef);
+		ERR(PF_CHECKOUT_PARAM(
+			in_data,
+			PLAYRATE_DISK_ID,
+			key_time,
+			in_data->time_step,
+			in_data->time_scale,
+			&playrateDef));
+		PF_FpLong const playrate = playrateDef.u.fs_d.value;
+		PF_CHECKIN_PARAM(in_data, &playrateDef);
+
+		PF_FpLong const pull_frame_time = (ctime - key_time) * playrate + start_key_time;
+		if (pull_frame_time < 0) {
+			continue;
+		}
+
 		// 获取相应时间画面，如果是当前帧则用当前画面
 		// 判断是否为当前帧
 		bool is_now = true;
@@ -449,7 +508,7 @@ Render(
 		ERR(PF_CHECKOUT_PARAM(
 			in_data,
 			SECOND_LAYER_DISK_ID,
-			ctime - key_time,
+			pull_frame_time,
 			in_data->time_step,
 			in_data->time_scale,
 			&imageDef));
@@ -474,7 +533,7 @@ Render(
 			ERR(PF_CHECKOUT_PARAM(
 				in_data,
 				PF_Param_LAYER,
-				ctime - key_time,
+				pull_frame_time,
 				in_data->time_step,
 				in_data->time_scale,
 				&imageDef));
@@ -863,6 +922,35 @@ PreRender(
 
 						ApplyTranslateMatrix(anchor_x, anchor_y, &matrix);
 
+						// 获取开始时间
+						PF_ParamDef startTimeDef;
+						AEFX_CLR_STRUCT(startTimeDef);
+						ERR(PF_CHECKOUT_PARAM(
+							in_data,
+							START_TIME_DISK_ID,
+							key_time,
+							in_data->time_step,
+							in_data->time_scale,
+							&startTimeDef));
+						A_long const start_key_time = startTimeDef.u.fs_d.value * key_time_scale;
+
+						// 获取播放速率
+						PF_ParamDef playrateDef;
+						AEFX_CLR_STRUCT(playrateDef);
+						ERR(PF_CHECKOUT_PARAM(
+							in_data,
+							PLAYRATE_DISK_ID,
+							key_time,
+							in_data->time_step,
+							in_data->time_scale,
+							&playrateDef));
+						PF_FpLong const playrate = playrateDef.u.fs_d.value;
+
+						PF_FpLong const pull_frame_time = (ctime - key_time) * playrate + start_key_time;
+						if (pull_frame_time < 0) {
+							continue;
+						}
+
 						// 获取相应时间画面，如果是当前帧则用当前画面
 						// 判断是否为当前帧
 						bool is_now = true;
@@ -871,7 +959,7 @@ PreRender(
 						ERR(PF_CHECKOUT_PARAM(
 							in_data,
 							SECOND_LAYER_DISK_ID,
-							ctime - key_time,
+							pull_frame_time,
 							in_data->time_step,
 							in_data->time_scale,
 							&imageDef));
@@ -900,7 +988,7 @@ PreRender(
 								PF_Param_LAYER,
 								storage_num,
 								&req,
-								ctime - key_time,
+								pull_frame_time,
 								in_data->time_step,
 								in_data->time_scale,
 								&result
@@ -911,7 +999,7 @@ PreRender(
 								SECOND_LAYER_DISK_ID,
 								storage_num,
 								&req,
-								ctime - key_time,
+								pull_frame_time,
 								in_data->time_step,
 								in_data->time_scale,
 								&result

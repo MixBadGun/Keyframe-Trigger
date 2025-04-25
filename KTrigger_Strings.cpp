@@ -31,8 +31,10 @@ typedef struct {
 TableString		g_strs[StrID_NUMTYPES] = {
 	StrID_NONE,						"",
 	StrID_Name,						PLUGIN_ID,
-	StrID_Description,				"通过关键帧触发以克隆图层的效果, Made by 坏枪.",
+	StrID_Description,				"通过关键帧触发以克隆图层的效果, Made by 坏枪.\n\n项目开源在 https://github.com/MixBadGun/Keyframe-Trigger",
 	StrID_Gain_Param_Name,			"控制器",
+	StrID_Start_Time_Param_Name,	"起始时间",
+	StrID_Playrate_Param_Name,		"播放速率",
 	StrID_Is_Control_Param_Name,	"控制器影响偏移",
 	StrID_Is_Frozen_Name,			"生成后冻结状态",
 	StrID_Anchor_Param_Name,		"锚点",

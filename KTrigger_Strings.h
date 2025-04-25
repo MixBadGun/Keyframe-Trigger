@@ -26,6 +26,8 @@ typedef enum {
 	StrID_Name,
 	StrID_Description,
 	StrID_Gain_Param_Name,
+	StrID_Start_Time_Param_Name,
+	StrID_Playrate_Param_Name,
 	StrID_Is_Control_Param_Name,
 	StrID_Is_Frozen_Name,
 	StrID_Anchor_Param_Name,

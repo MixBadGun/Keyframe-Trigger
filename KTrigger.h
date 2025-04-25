@@ -65,7 +65,7 @@ typedef short int			int16;
 /* Versioning information */
 
 #define	MAJOR_VERSION	2
-#define	MINOR_VERSION	0
+#define	MINOR_VERSION	1
 #define	BUG_VERSION		0
 #define	STAGE_VERSION	PF_Stage_RELEASE
 #define	BUILD_VERSION	1
@@ -79,13 +79,15 @@ BUILD_VERSION */
 
 /* Parameter defaults */
 
-#define	SKELETON_GAIN_MIN		-1000
-#define	SKELETON_GAIN_MAX		1000
+#define	SKELETON_GAIN_MIN		-10000
+#define	SKELETON_GAIN_MAX		10000
 #define	SKELETON_GAIN_DFLT		0
 
 enum {
 	SKELETON_INPUT = 0,
 	SKELETON_GAIN,
+	START_TIME_DISK,
+	PLAYRATE_DISK,
 	IS_CONTROL_DISK,
 	IS_FROZEN_DISK,
 	ANCHOR_DISK,
@@ -113,6 +115,8 @@ enum {
 
 enum {
 	GAIN_DISK_ID = 1,
+	START_TIME_DISK_ID,
+	PLAYRATE_DISK_ID,
 	IS_CONTROL_DISK_ID,
 	IS_FROZEN_DISK_ID,
 	ANCHOR_DISK_ID,
