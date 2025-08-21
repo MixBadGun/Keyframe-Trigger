@@ -23,9 +23,17 @@
 #include <Smart_Utils.h>
 #include <list>
 #include "KTrigger_Func.cpp"
+#include "KTrigger_Strings.h"
 #include <string>
+#include <AE_EffectGPUSuites.h>
+#include <AEFX_SuiteHandlerTemplate.h>
+#include "KTrigger_GPU.h"
+#include "KTrigger_GPU_Kernel.cu"
+
+#define	STR(_foo)	GetStringPtr(_foo, lang_tagZ)
 
 static AEGP_PluginID* Plugin_ID;
+static A_char lang_tagZ[PF_APP_LANG_TAG_SIZE - 1];
 
 static PF_Err 
 About (	
@@ -54,6 +62,8 @@ GlobalSetup (
 {
 	AEGP_SuiteHandler	suites(in_data->pica_basicP);
 
+	suites.AppSuite6()->PF_AppGetLanguage(lang_tagZ);
+
 	out_data->my_version = PF_VERSION(	MAJOR_VERSION, 
 										MINOR_VERSION,
 										BUG_VERSION, 
@@ -64,8 +74,10 @@ GlobalSetup (
 							PF_OutFlag_DEEP_COLOR_AWARE;
 
 	out_data->out_flags2 |= PF_OutFlag2_SUPPORTS_THREADED_RENDERING |
-							PF_OutFlag2_SUPPORTS_SMART_RENDER |
-							PF_OutFlag2_FLOAT_COLOR_AWARE;
+		PF_OutFlag2_SUPPORTS_SMART_RENDER |
+		PF_OutFlag2_FLOAT_COLOR_AWARE;
+							// PF_OutFlag2_SUPPORTS_GPU_RENDER_F32 | 
+							// PF_OutFlag2_SUPPORTS_DIRECTX_RENDERING;
 	//out_data->out_flags = PF_OutFlag_DEEP_COLOR_AWARE;
 	return PF_Err_NONE;
 }
@@ -82,7 +94,6 @@ ParamsSetup (
 
 	AEFX_CLR_STRUCT(def);
 
-	// 控制器
 	PF_ADD_FLOAT_SLIDERX(	STR(StrID_Gain_Param_Name), 
 							SKELETON_GAIN_MIN,
 							SKELETON_GAIN_MAX,
@@ -96,7 +107,6 @@ ParamsSetup (
 
 	AEFX_CLR_STRUCT(def);
 
-	// 起始时间
 	PF_ADD_FLOAT_SLIDERX(STR(StrID_Start_Time_Param_Name),
 		0,
 		1000000,
@@ -110,7 +120,6 @@ ParamsSetup (
 
 	AEFX_CLR_STRUCT(def);
 
-	// 播放速率
 	PF_ADD_FLOAT_SLIDERX(STR(StrID_Playrate_Param_Name),
 		-100,
 		100,
@@ -124,20 +133,19 @@ ParamsSetup (
 
 	AEFX_CLR_STRUCT(def);
 
-	// 控制器影响
 	PF_ADD_CHECKBOXX(STR(StrID_Is_Control_Param_Name),
 		false,
 		0,
 		IS_CONTROL_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
-	// 冻结已有生成状态
+
 	PF_ADD_CHECKBOXX(STR(StrID_Is_Frozen_Name),
 		false,
 		0,
 		IS_FROZEN_DISK_ID);
 	AEFX_CLR_STRUCT(def);
-	// 锚点
+
 	PF_ADD_POINT(STR(StrID_Anchor_Param_Name),
 		INT2FIX(in_data->width / 2),
 		INT2FIX(in_data->height / 2),
@@ -145,7 +153,7 @@ ParamsSetup (
 		ANCHOR_DISK_ID
 	);
 	AEFX_CLR_STRUCT(def);
-	// 单独缩放
+
 	PF_ADD_FLOAT_SLIDERX(STR(StrID_Scale_Size_Name),
 		0,
 		1000,
@@ -157,21 +165,21 @@ ParamsSetup (
 		0,
 		SCALE_SIZE_DISK_ID);
 	AEFX_CLR_STRUCT(def);
-	// 水平翻转
+
 	PF_ADD_CHECKBOXX(STR(StrID_Is_Flip_Param_Name),
 		false,
 		0,
 		IS_FLIP_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
-	// 偏移属性选择
+
 	PF_ADD_POPUP(STR(StrID_Switch_Param_Name),
 		2,
 		1,
 		STR(StrID_Switch_Popup_Choices),
 		SWITCH_DISK_ID);
 	AEFX_CLR_STRUCT(def);
-	// 序列数量
+
 	PF_ADD_FLOAT_SLIDERX(STR(StrID_Offset_Count_Param_Name),
 		0,
 		10000,
@@ -185,13 +193,13 @@ ParamsSetup (
 	AEFX_CLR_STRUCT(def);
 	PF_ADD_TOPIC(STR(StrID_Return_Group_Name), RETURN_GROUP_DISK_ID);
 	AEFX_CLR_STRUCT(def);
-	// 来回往复
+
 	PF_ADD_CHECKBOXX(STR(StrID_Return_Param_Name),
 		false,
 		0,
 		RETURN_DISK_ID);
 	AEFX_CLR_STRUCT(def);
-	// 来回往复（不含首尾）
+
 	PF_ADD_CHECKBOXX(STR(StrID_Return2_Param_Name),
 		false,
 		0,
@@ -201,7 +209,7 @@ ParamsSetup (
 	AEFX_CLR_STRUCT(def);
 	PF_ADD_TOPIC(STR(StrID_Offset_Group_Name), OFFSET_GROUP_ID);
 	AEFX_CLR_STRUCT(def);
-	// 偏移（点）
+
 	PF_ADD_POINT(STR(StrID_Offset_Param_Name),
 		0,
 		0,
@@ -214,12 +222,12 @@ ParamsSetup (
 	AEFX_CLR_STRUCT(def);
 	PF_ADD_TOPIC(STR(StrID_Rotate_Group_Name), ROTATE_GROUP_ID);
 	AEFX_CLR_STRUCT(def);
-	// 旋转角度
+
 	PF_ADD_ANGLE(STR(StrID_Rotate_Param_Name),
 		0,
 		ROTATE_DISK_ID);
 	AEFX_CLR_STRUCT(def);
-	// 旋转缩放
+
 	PF_ADD_FLOAT_SLIDERX(STR(StrID_Rotate_Scale_Param_Name),
 		0,
 		1000,
@@ -233,7 +241,7 @@ ParamsSetup (
 	AEFX_CLR_STRUCT(def);
 	PF_END_TOPIC(ROTATE_GROUP_END_ID);
 	AEFX_CLR_STRUCT(def);
-	// 最大时间范围
+
 	PF_ADD_FLOAT_SLIDERX(STR(StrID_Max_Dur_Name),
 		0,
 		100000,
@@ -246,19 +254,19 @@ ParamsSetup (
 		MAX_DUR_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
-	// 混合模式
+
 	PF_ADD_POPUP(STR(StrID_Xfer_Mode_Name),
 	21,
 	1,
 	STR(StrID_Xfer_Mode_Choices),
 	XFER_MODE_DISK_ID);
-	// 第二图层
+
 	AEFX_CLR_STRUCT(def);
 	PF_ADD_LAYER(STR(StrID_Second_Layer_Name),
 		PF_LayerDefault_NONE,
 		SECOND_LAYER_DISK_ID);
 	AEFX_CLR_STRUCT(def);
-	// 用于刷新用的破滑条
+
 	PF_ADD_FLOAT_SLIDERX(STR(StrID_Random_Name),
 		0,
 		100,
@@ -318,7 +326,7 @@ static void Translate2Matrix(PF_FpLong x_offset, PF_FpLong y_offset, PF_FloatMat
 }
 
 
-// 混合模式
+
 
 typedef struct {
 	A_u_long	index;
@@ -368,13 +376,11 @@ Render(
 	GainInfo			giP;
 	AEFX_CLR_STRUCT(giP);
 
-	PF_Boolean			deepB = PF_WORLD_IS_DEEP(output); // 是否为16位
+	PF_Boolean			deepB = PF_WORLD_IS_DEEP(output);
 	PF_NewWorldFlags	flags = PF_NewWorldFlag_CLEAR_PIXELS;
 	if (deepB) {
 		flags |= PF_NewWorldFlag_DEEP_PIXELS;
 	}
-
-	// 初始化背景与混合模式
 
 	const PF_Pixel transparent_black = { 0, 0, 0, 0 };
 	ERR(PF_FILL(&transparent_black, &output->extent_hint, output));
@@ -383,14 +389,13 @@ Render(
 	composite_mode.opacity = 255;
 	composite_mode.xfer = GetXferMode(params[XFER_MODE_DISK_ID]->u.pd.value);
 
-	// 获取当前时间
 	const A_long ctime = in_data->current_time;
-	// 获取关键帧总数
+
 	A_long keyframes = 0;
 	ERR(suites.ParamUtilsSuite3()->PF_GetKeyframeCount(in_data->effect_ref,
 		SKELETON_GAIN,
 		&keyframes));
-	// 找到在可渲染范围内的第一个帧的索引
+
 	PF_KeyIndex findex = 0;
 	PF_Boolean fhasKey = false;
 	A_long fkey_time = 0;
@@ -429,7 +434,6 @@ Render(
 	PF_FpLong anchor_x = FIX_2_FLOAT(params[ANCHOR_DISK_ID]->u.td.x_value);
 	PF_FpLong anchor_y = FIX_2_FLOAT(params[ANCHOR_DISK_ID]->u.td.y_value);
 
-	// 从第一帧开始遍历，如果在时间范围内就叠加上去
 	for (int i = findex;i < keyframes;i++) {
 		A_long key_time = 0;
 		A_u_long key_time_scale = 0;
@@ -439,15 +443,15 @@ Render(
 			i,
 			&key_time,
 			&key_time_scale));
-		// 如果遍历到最后一个帧，则直接跳出
+
 		if (ctime < key_time) {
 			break;
 		}
-		// 如果在时间范围外，则忽略
+		// ??????Χ??????
 		if (ctime - key_time > in_data->total_time){
 			continue;
 		}
-		// 最大缓存量（秒）
+		// ???????Χ
 		if (key_time_scale != 0) {
 			const PF_FpLong time = PF_FABS((ctime - key_time) / (double)key_time_scale);
 			const PF_FpLong max_cache = params[MAX_DUR_DISK_ID]->u.fs_d.value;
@@ -465,11 +469,11 @@ Render(
 
 		ApplyTranslateMatrix(anchor_x, anchor_y, &matrix);
 
-		// 新世界并初始化
+		// ??????????
 		const A_long widthL = in_data->extent_hint.right - in_data->extent_hint.left;
 		const A_long heightL = in_data->extent_hint.bottom - in_data->extent_hint.top;
 
-		// 获取开始时间
+		// ?????????
 		PF_ParamDef startTimeDef;
 		AEFX_CLR_STRUCT(startTimeDef);
 		ERR(PF_CHECKOUT_PARAM(
@@ -482,7 +486,7 @@ Render(
 		A_long const start_key_time = startTimeDef.u.fs_d.value * key_time_scale;
 		PF_CHECKIN_PARAM(in_data, &startTimeDef);
 
-		// 获取播放速率
+		// ???????????
 		PF_ParamDef playrateDef;
 		AEFX_CLR_STRUCT(playrateDef);
 		ERR(PF_CHECKOUT_PARAM(
@@ -500,8 +504,7 @@ Render(
 			continue;
 		}
 
-		// 获取相应时间画面，如果是当前帧则用当前画面
-		// 判断是否为当前帧
+		// ??????????????????????ж?????????
 		bool is_now = true;
 		PF_ParamDef imageDef;
 		AEFX_CLR_STRUCT(imageDef);
@@ -539,7 +542,6 @@ Render(
 				&imageDef));
 		}
 		
-		// 给 cworld 赋值，水平翻转
 		A_Boolean is_flip = false;
 		if (params[IS_FLIP_DISK_ID]->u.bd.value && i % 2 == 1) {
 			is_flip = true;
@@ -568,7 +570,7 @@ Render(
 		//else {
 		//	ERR(PF_COPY(&imageDef.u.ld, &cworld, NULL, NULL));
 		//}
-		// 获取当前帧数据（如果启用，否则为索引）
+		// ?????????????????ж?????????
 		PF_FpLong state = 0;
 		const A_long offset_count = params[OFFSET_COUNT_DISK_ID]->u.fs_d.value;
 		if (params[IS_CONTROL_DISK_ID]->u.bd.value) {
@@ -615,7 +617,7 @@ Render(
 			}
 			
 		}
-		// 混合进新画面中
+		// ?????任????
 		switch (params[SWITCH_DISK_ID]->u.pd.value) {
 		case 1: {
 			PF_FpLong x_offset = 0;
@@ -693,7 +695,7 @@ Render(
 	return err;
 }
 
-// SmartRender 部分
+// SmartRender ?????
 
 static PF_Err
 PreRender(
@@ -701,6 +703,8 @@ PreRender(
 	PF_OutData* out_data,
 	PF_PreRenderExtra* extra)
 {
+	// extra->output->flags |= PF_RenderOutputFlag_GPU_RENDER_POSSIBLE;
+
 	PF_Err err = PF_Err_NONE;
 	PF_RenderRequest req = extra->input->output_request;
 	PF_CheckoutResult in_result;
@@ -738,15 +742,15 @@ PreRender(
 					const A_long Lwidth = in_result.max_result_rect.right - in_result.max_result_rect.left,
 					             Lheight = in_result.max_result_rect.bottom - in_result.max_result_rect.top;
 
-					//// 计算 LayerPack 部分
+					//// ???? LayerPack ??
 					LayerPack layerPack{
 						0,
 						std::vector<LayerInfo>{}
 					};
-					// 获取当前时间
+					// ?????????
 					const A_long ctime = in_data->current_time;
 
-					// 获取参数
+					// ???????
 					PF_ParamDef isflipDef, isfrozenDef, maxdurDef, offsetcountDef, isconDef,
 						returnDef, return2Def, switchDef, rotatescaleDef, xferDef, anchorDef;
 					AEFX_CLR_STRUCT(isflipDef);
@@ -831,12 +835,12 @@ PreRender(
 
 					layerPack.xfer = xferDef.u.pd.value;
 
-					// 获取关键帧总数
+					// ???????????
 					A_long keyframes = 0;
 					ERR(suites.ParamUtilsSuite3()->PF_GetKeyframeCount(in_data->effect_ref,
 						SKELETON_GAIN,
 						&keyframes));
-					// 找到在可渲染范围内的第一个帧的索引
+					// ?????????Χ???????????
 					PF_KeyIndex findex = 0;
 					PF_Boolean fhasKey = false;
 					A_long fkey_time = 0;
@@ -879,9 +883,9 @@ PreRender(
 					else {
 						findex = 0;
 					}
-					//// 帧总数
+					//// ?????洢
 					A_long storage_num = 0;
-					// 从第一帧开始遍历，如果在时间范围内就叠加上去
+					// ????????????????????Χ?????д洢
 					for (int i = findex;i < keyframes;i++) {
 						A_long key_time = 0;
 						A_u_long key_time_scale = 0;
@@ -891,15 +895,15 @@ PreRender(
 							i,
 							&key_time,
 							&key_time_scale));
-						// 如果遍历到最后一个帧，则直接跳出
+						// ??????Χ???????????
 						if (ctime < key_time) {
 							break;
 						}
-						// 如果在时间范围外，则忽略
+						// ??????Χ??????
 						if (ctime - key_time > in_data->total_time) {
 							continue;
 						}
-						// 最大缓存量（秒）
+						// ???????Χ
 						if (key_time_scale != 0) {
 							const PF_FpLong time = PF_FABS((ctime - key_time) / (double)key_time_scale);
 							const PF_FpLong max_cache = maxdurDef.u.fs_d.value;
@@ -922,7 +926,7 @@ PreRender(
 
 						ApplyTranslateMatrix(anchor_x, anchor_y, &matrix);
 
-						// 获取开始时间
+						// ?????????
 						PF_ParamDef startTimeDef;
 						AEFX_CLR_STRUCT(startTimeDef);
 						ERR(PF_CHECKOUT_PARAM(
@@ -934,7 +938,6 @@ PreRender(
 							&startTimeDef));
 						A_long const start_key_time = startTimeDef.u.fs_d.value * key_time_scale;
 
-						// 获取播放速率
 						PF_ParamDef playrateDef;
 						AEFX_CLR_STRUCT(playrateDef);
 						ERR(PF_CHECKOUT_PARAM(
@@ -951,8 +954,8 @@ PreRender(
 							continue;
 						}
 
-						// 获取相应时间画面，如果是当前帧则用当前画面
-						// 判断是否为当前帧
+						// ??????????????????????ж?????????
+						// ?ж?????????
 						bool is_now = true;
 						PF_ParamDef imageDef;
 						AEFX_CLR_STRUCT(imageDef);
@@ -1006,7 +1009,7 @@ PreRender(
 							);
 						}
 
-						// 给 cworld 赋值，水平翻转
+						// ???? cworld ????????????
 						A_Boolean is_flip = false;
 						if (isflipDef.u.bd.value && i % 2 == 1) {
 							is_flip = true;
@@ -1043,7 +1046,7 @@ PreRender(
 						// else {
 						//	ERR(PF_COPY(&imageDef.u.ld, &cworld, NULL, NULL));
 						// }
-						// 获取当前帧数据（如果启用，否则为索引）
+						// ?????????????????ж?????????
 						PF_FpLong state = 0;
 						const A_long offset_count = offsetcountDef.u.fs_d.value;
 						if (isconDef.u.bd.value) {
@@ -1091,7 +1094,7 @@ PreRender(
 							}
 
 						}
-						// 混合进新画面中
+						// ?????任????
 						A_long check_time = ctime;
 						if (isfrozenDef.u.bd.value) {
 							check_time = key_time;
@@ -1161,12 +1164,120 @@ PreRender(
 
 }
 
+// ??????????ж???????GPU
+static bool ShouldUseGPU(PF_InData* in_data, PF_SmartRenderExtra* extra)
+{
+    // ???GPU?????????
+    AEFX_SuiteScoper<PF_GPUDeviceSuite1> gpu_suite(in_data, 
+                                                  kPFGPUDeviceSuite, 
+                                                  kPFGPUDeviceSuiteVersion1, 
+                                                  NULL);
+    // ???????ж????GPU?豸
+	if (extra->input->what_gpu != PF_GPU_Framework_NONE) {
+		return true;
+	}
+	return false;
+}
+
+// GPU实现部分
 static PF_Err
-SmartRender(
+SmartRenderGPU(
+    PF_InData* in_data,
+    PF_OutData* out_data,
+    PF_SmartRenderExtra* extra)
+{
+	PF_EffectWorld* input_worldP = NULL,
+	* output_worldP = NULL;
+
+    PF_Err err = PF_Err_NONE;
+    
+    AEGP_SuiteHandler suites(in_data->pica_basicP);
+    AEFX_SuiteScoper<PF_GPUDeviceSuite1> gpu_suite(in_data, kPFGPUDeviceSuite, kPFGPUDeviceSuiteVersion1, out_data);
+
+    LayerPack* infoP = reinterpret_cast<LayerPack*>(suites.HandleSuite1()->host_lock_handle(
+        reinterpret_cast<PF_Handle>(extra->input->pre_render_data)));
+
+    if (!infoP) {
+        return PF_Err_BAD_CALLBACK_PARAM;
+    }
+
+	ERR(extra->cb->checkout_output(in_data->effect_ref, &output_worldP));
+
+    PF_GPUDeviceInfo device_info;
+    ERR(gpu_suite->GetDeviceInfo(in_data->effect_ref, extra->input->device_index, &device_info));
+
+	// 输出的内存地址
+    void* output_mem = NULL;
+    ERR(gpu_suite->GetGPUWorldData(in_data->effect_ref, output_worldP, &output_mem));
+
+	#if HAS_CUDA
+	ClearToTransparentBlack_CUDA((float*)output_mem, output_worldP->width, output_worldP->height, 
+                                output_worldP->rowbytes / 16);
+	#endif
+
+    // 开始对每一层进行处理
+    for (LayerInfo& layer : infoP->pack) {
+        PF_EffectWorld* layer_worldP = NULL;
+        ERR((extra->cb->checkout_layer_pixels(in_data->effect_ref, layer.idL, &layer_worldP)));
+        
+        if (!err && layer_worldP) {
+            void* layer_mem = NULL;
+            ERR(gpu_suite->GetGPUWorldData(in_data->effect_ref, layer_worldP, &layer_mem));
+            
+            if (extra->input->what_gpu == PF_GPU_Framework_CUDA) {
+				#if HAS_CUDA
+                err = CompositeLayer_CUDA(
+                    (const float*)layer_mem,
+                    (float*)output_mem,
+                    layer_worldP->width,
+                    layer_worldP->height,
+                    layer_worldP->rowbytes / 16, // src_pitch
+                    output_worldP->width,
+                    output_worldP->height,
+                    output_worldP->rowbytes / 16, // dst_pitch
+                    &layer.matrix,
+                    infoP->xfer,
+                    255, // opacity (0-255)
+                    false // premultiplied alpha
+                );
+				#endif
+            }
+            else if (extra->input->what_gpu == PF_GPU_Framework_OPENCL) {
+                #if HAS_OPENCL
+                err = CompositeLayer_OpenCL(
+                    extra->input->gpu_data,
+                    device_info.command_queuePV,
+                    layer_mem,
+                    output_mem,
+                    layer_worldP->width,
+                    layer_worldP->height,
+                    layer_worldP->rowbytes,
+                    output_worldP->width,
+                    output_worldP->height,
+                    output_worldP->rowbytes,
+                    &layer.matrix,
+                    infoP->xfer,
+                    255
+                );
+                #endif
+            }
+            // ??????????Metal??DirectX?????...
+            
+            // ??????
+            ERR(extra->cb->checkin_layer_pixels(in_data->effect_ref, layer.idL));
+        }
+    }
+
+    suites.HandleSuite1()->host_unlock_handle(reinterpret_cast<PF_Handle>(extra->input->pre_render_data));
+    return err;
+}
+
+static PF_Err
+SmartRenderCPU(
 	PF_InData* in_data,
 	PF_OutData* out_data,
-	PF_SmartRenderExtra* extra)
-
+	PF_SmartRenderExtra* extra
+)
 {
 	PF_Err				err = PF_Err_NONE,
 		err2 = PF_Err_NONE;
@@ -1219,11 +1330,40 @@ SmartRender(
 	} else {
 		err = PF_Err_BAD_CALLBACK_PARAM;
 	}
-	//ERR2(AEFX_ReleaseSuite(in_data,
+
+	// ERR2(AEFX_ReleaseSuite(in_data,
 	//	out_data,
 	//	kPFWorldSuite,
 	//	kPFWorldSuiteVersion2,
 	//	"Couldn't release suite."));
+	return err;
+}
+
+static PF_Err 
+SmartRender(
+	PF_InData* in_data,
+	PF_OutData* out_data,
+	PF_SmartRenderExtra* extra,
+	bool use_gpu
+)
+{
+	PF_Err				err = PF_Err_NONE,
+		err2 = PF_Err_NONE;
+
+	if(use_gpu){
+		ERR(SmartRenderGPU(
+			in_data,
+			out_data,
+			extra
+		));
+	} else {
+		ERR(SmartRenderCPU(
+			in_data,
+			out_data,
+			extra
+		));
+	}
+
 	return err;
 }
 
@@ -1298,10 +1438,18 @@ EffectMain(
 			case PF_Cmd_SMART_PRE_RENDER:
 				err = PreRender(in_data, out_data, (PF_PreRenderExtra*)extra);
 				break;
-
 			case PF_Cmd_SMART_RENDER:
-				err = SmartRender(in_data, out_data, (PF_SmartRenderExtra*)extra);
+				err = SmartRender(in_data, out_data, (PF_SmartRenderExtra*)extra, false);
 				break;
+			// case PF_Cmd_GPU_DEVICE_SETUP:
+			// 	err = GPUDeviceSetup(in_data, out_data, (PF_GPUDeviceSetupExtra *)extra);
+			// 	break;
+			// case PF_Cmd_GPU_DEVICE_SETDOWN:
+			// 	err = GPUDeviceSetdown(in_data, out_data, (PF_GPUDeviceSetdownExtra *)extra);
+			// 	break;
+			// case PF_Cmd_SMART_RENDER_GPU:
+			// 	err = SmartRender(in_data, out_data, (PF_SmartRenderExtra*)extra, true);
+			// 	break;
 		}
 	}
 	catch(PF_Err &thrown_err){

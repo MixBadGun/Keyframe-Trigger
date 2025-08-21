@@ -28,7 +28,7 @@ typedef struct {
 
 
 
-TableString		g_strs[StrID_NUMTYPES] = {
+TableString		zh_strs[StrID_NUMTYPES] = {
 	StrID_NONE,						"",
 	StrID_Name,						PLUGIN_ID,
 	StrID_Description,				"通过关键帧触发以克隆图层的效果, Made by 坏枪.\n\n项目开源在 https://github.com/MixBadGun/Keyframe-Trigger",
@@ -79,8 +79,63 @@ TableString		g_strs[StrID_NUMTYPES] = {
 	StrID_Random_Name,				"用来刷新渲染的笨笨滑条",
 };
 
+TableString		en_strs[StrID_NUMTYPES] = {
+	StrID_NONE,						"",
+	StrID_Name,						PLUGIN_ID,
+	StrID_Description,				"Clone layers triggered by keyframes, Made by BadGun.\n\nOpen source at https://github.com/MixBadGun/Keyframe-Trigger",
+	StrID_Gain_Param_Name,			"Controller",
+	StrID_Start_Time_Param_Name,	"Start Time",
+	StrID_Playrate_Param_Name,		"Play Rate",
+	StrID_Is_Control_Param_Name,	"Controller Affects Offset",
+	StrID_Is_Frozen_Name,			"Freeze State After Generation",
+	StrID_Anchor_Param_Name,		"Anchor Point",
+	StrID_Scale_Size_Name,			"Scale Size",
+	StrID_Is_Flip_Param_Name,		"Flip Horizontal",
+	StrID_Switch_Param_Name,		"Offset Mode",
+	StrID_Switch_Popup_Choices,		"Position|"
+									"Rotation",
+	StrID_Return_Group_Name,		"Sequence Properties",
+	StrID_Return_Param_Name,		"Ping Pong",
+	StrID_Return2_Param_Name,		"(Ping Pong) No Repeat at Ends",
+	StrID_Offset_Group_Name,		"Position Properties",
+	StrID_Offset_Param_Name,		"Position Offset",
+	StrID_Offset_Count_Param_Name,	"Sequence Count",
+	StrID_Rotate_Group_Name,		"Rotation Properties",
+	StrID_Rotate_Param_Name,		"Rotation Angle",
+	StrID_Rotate_Scale_Param_Name,	"Rotation Scale",
+	StrID_Max_Dur_Name,				"Max Duration (seconds)",
+	StrID_Xfer_Mode_Name,			"Blend Mode",
+	StrID_Xfer_Mode_Choices,		"Foreground Over|"
+									"Background Over|"
+									"(-|"
+									"Dissolve|"
+									"Add|"
+									"Multiply|"
+									"Screen|"
+									"Overlay|"
+									"Soft Light|"
+									"Hard Light|"
+									"Darken|"
+									"Lighten|"
+									"Difference|"
+									"Hue|"
+									"Saturation|"
+									"Color|"
+									"Luminosity|"
+									"Alpha Add|"
+									"Exclusion|"
+									"Subtract|"
+									"Divide",
+	StrID_Second_Layer_Name,		"Second Layer",
+	StrID_Random_Name,				"Dummy Slider for Refresh Rendering",
+};
 
-char	*GetStringPtr(int strNum)
+
+char	*GetStringPtr(int strNum, A_char* lang_tagZ = nullptr)
 {
-	return g_strs[strNum].str;
+	if (lang_tagZ && strcmp(lang_tagZ, "zh_CN") == 0) {
+		return zh_strs[strNum].str;
+	} else {
+		return en_strs[strNum].str;
+	}
 }

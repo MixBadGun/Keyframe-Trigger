@@ -51,3 +51,5 @@ typedef enum {
 	StrID_Random_Name,
 	StrID_NUMTYPES
 } StrIDType;
+
+char	*GetStringPtr(int strNum, A_char* lang_tagZ);

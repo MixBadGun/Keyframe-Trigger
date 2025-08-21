@@ -84,6 +84,7 @@
     <ClInclude Include="..\..\..\Headers\AE_PluginData.h">
       <Filter>Headers\AE</Filter>
     </ClInclude>
+    <ClInclude Include="..\KTrigger_GPU.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Util\AEGP_SuiteHandler.cpp">
@@ -98,10 +99,15 @@
       <Filter>Supporting code</Filter>
     </ClCompile>
     <ClCompile Include="..\KTrigger_Func.cpp" />
+    <ClCompile Include="..\KTrigger_GPU.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\SkeletonPiPL.r">
       <Filter>Resources</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\KTrigger_GPU.cu" />
+    <None Include="..\KTrigger_GPU_kernel.cu" />
   </ItemGroup>
 </Project>

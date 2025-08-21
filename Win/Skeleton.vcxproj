@@ -95,6 +95,12 @@
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.aex</TargetExt>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.aex</TargetExt>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ExternalIncludePath>F:\Code\AfterEffectsSDK\Examples\GPUUtils;F:\boost_1_89_0;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\include;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ExternalIncludePath>F:\Code\AfterEffectsSDK\Examples\GPUUtils;F:\boost_1_89_0;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\include;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -347,6 +353,7 @@ cl /D "MSWindows" /EP $(IntDir)%(Filename).rrc &gt;               "$(ProjectDir)
   <ItemGroup>
     <ClInclude Include="..\..\..\Headers\AE_PluginData.h" />
     <ClInclude Include="..\KTrigger.h" />
+    <ClInclude Include="..\KTrigger_GPU.h" />
     <ClInclude Include="..\KTrigger_Strings.h" />
     <ClInclude Include="..\..\..\Headers\A.h" />
     <ClInclude Include="..\..\..\Headers\AE_Effect.h" />
@@ -373,7 +380,12 @@ cl /D "MSWindows" /EP $(IntDir)%(Filename).rrc &gt;               "$(ProjectDir)
     <ClCompile Include="..\..\..\Util\Smart_Utils.cpp" />
     <ClCompile Include="..\KTrigger.cpp" />
     <ClCompile Include="..\KTrigger_Func.cpp" />
+    <ClCompile Include="..\KTrigger_GPU.cpp" />
     <ClCompile Include="..\KTrigger_Strings.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\KTrigger_GPU.cu" />
+    <None Include="..\KTrigger_GPU_kernel.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
