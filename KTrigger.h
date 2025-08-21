@@ -65,7 +65,7 @@ typedef short int			int16;
 /* Versioning information */
 
 #define	MAJOR_VERSION	2
-#define	MINOR_VERSION	1
+#define	MINOR_VERSION	2
 #define	BUG_VERSION		0
 #define	STAGE_VERSION	PF_Stage_RELEASE
 #define	BUILD_VERSION	1
