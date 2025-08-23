@@ -1,82 +1,67 @@
-/*******************************************************************/
-/*                                                                 */
-/*                      ADOBE CONFIDENTIAL                         */
-/*                   _ _ _ _ _ _ _ _ _ _ _ _ _                     */
-/*                                                                 */
-/* Copyright 2007-2023 Adobe Inc.                                  */
-/* All Rights Reserved.                                            */
-/*                                                                 */
-/* NOTICE:  All information contained herein is, and remains the   */
-/* property of Adobe Inc. and its suppliers, if                    */
-/* any.  The intellectual and technical concepts contained         */
-/* herein are proprietary to Adobe Inc. and its                    */
-/* suppliers and may be covered by U.S. and Foreign Patents,       */
-/* patents in process, and are protected by trade secret or        */
-/* copyright law.  Dissemination of this information or            */
-/* reproduction of this material is strictly forbidden unless      */
-/* prior written permission is obtained from Adobe Inc.            */
-/* Incorporated.                                                   */
-/*                                                                 */
-/*******************************************************************/
+ï»¿/*	
+*   æœ¬åœŸåŒ–åŒºåŸŸ				Localization
+*	å¯åœ¨è¿™é‡Œè¡¥å……æœ¬åœ°åŒ–è¯­è¨€	 You can add your local language here
+*/
 
-#include "KTrigger.h"
+#include "KTrigger_Strings.h"
 
 typedef struct {
 	A_u_long	index;
 	A_char		str[380];
 } TableString;
 
-
-
 TableString		zh_strs[StrID_NUMTYPES] = {
 	StrID_NONE,						"",
 	StrID_Name,						PLUGIN_ID,
-	StrID_Description,				"Í¨¹ı¹Ø¼üÖ¡´¥·¢ÒÔ¿ËÂ¡Í¼²ãµÄĞ§¹û, Made by »µÇ¹.\n\nÏîÄ¿¿ªÔ´ÔÚ https://github.com/MixBadGun/Keyframe-Trigger",
-	StrID_Gain_Param_Name,			"¿ØÖÆÆ÷",
-	StrID_Start_Time_Param_Name,	"ÆğÊ¼Ê±¼ä",
-	StrID_Playrate_Param_Name,		"²¥·ÅËÙÂÊ",
-	StrID_Is_Control_Param_Name,	"¿ØÖÆÆ÷Ó°ÏìÆ«ÒÆ",
-	StrID_Is_Frozen_Name,			"Éú³Éºó¶³½á×´Ì¬",
-	StrID_Anchor_Param_Name,		"Ãªµã",
-	StrID_Scale_Size_Name,			"Ëõ·Å´óĞ¡",
-	StrID_Is_Flip_Param_Name,		"Ë®Æ½·­×ª",
-	StrID_Switch_Param_Name,		"Æ«ÒÆÄ£Ê½",
-	StrID_Switch_Popup_Choices,		"Î»ÖÃ|"
-									"Ğı×ª",
-	StrID_Return_Group_Name,		"ĞòÁĞÊôĞÔ",
-	StrID_Return_Param_Name,		"ÕÛ·µÀ´»Ø",
-	StrID_Return2_Param_Name,		"£¨ÕÛ·µ£©ÓöÊ×Î²²»ÖØ¸´",
-	StrID_Offset_Group_Name,		"Î»ÖÃÊôĞÔ",
-	StrID_Offset_Param_Name,		"Î»ÖÃÆ«ÒÆ",
-	StrID_Offset_Count_Param_Name,	"ĞòÁĞÊıÁ¿",
-	StrID_Rotate_Group_Name,		"Ğı×ªÊôĞÔ",
-	StrID_Rotate_Param_Name,		"Ğı×ª½Ç¶È",
-	StrID_Rotate_Scale_Param_Name,	"Ğı×ªËõ·Å",
-	StrID_Max_Dur_Name,				"×î´ó³ÖĞøÊ±¼ä (Ãë)",
-	StrID_Xfer_Mode_Name,			"»ìºÏÄ£Ê½",
-	StrID_Xfer_Mode_Choices,		"ÏòÇ°¸²¸Ç|"
-									"Ïòºó¸²¸Ç|"
+	StrID_Description,				"é€šè¿‡å…³é”®å¸§è§¦å‘ä»¥å…‹éš†å›¾å±‚çš„æ•ˆæœ, Made by åæª.\n\né¡¹ç›®å¼€æºåœ¨ https://github.com/MixBadGun/Keyframe-Trigger",
+	StrID_Gain_Param_Name,			"æ§åˆ¶å™¨",
+	StrID_Count_Param_Name,			"æ•°é‡",
+	StrID_Start_Time_Param_Name,	"èµ·å§‹æ—¶é—´",
+	StrID_Playrate_Param_Name,		"æ’­æ”¾é€Ÿç‡",
+	StrID_Is_Control_Param_Name,	"æ§åˆ¶å™¨å½±å“åç§»",
+	StrID_Is_Frozen_Name,			"ç”Ÿæˆåå†»ç»“çŠ¶æ€",
+	StrID_Anchor_Param_Name,		"é”šç‚¹",
+	StrID_Scale_Size_Name,			"ç¼©æ”¾å¤§å°",
+	StrID_Is_Flip_Param_Name,		"æ°´å¹³ç¿»è½¬",
+	StrID_Switch_Param_Name,		"åç§»æ¨¡å¼",
+	StrID_Switch_Popup_Choices,		"ä½ç½®|"
+									"æ—‹è½¬",
+	StrID_Return_Group_Name,		"åºåˆ—å±æ€§",
+	StrID_Return_Param_Name,		"æŠ˜è¿”æ¥å›",
+	StrID_Return2_Param_Name,		"ï¼ˆæŠ˜è¿”ï¼‰é‡é¦–å°¾ä¸é‡å¤",
+	StrID_Offset_Group_Name,		"ä½ç½®å±æ€§",
+	StrID_Offset_Param_Name,		"ä½ç½®åç§»",
+	StrID_Offset_Count_Param_Name,	"åºåˆ—æ•°é‡",
+	StrID_Rotate_Group_Name,		"æ—‹è½¬å±æ€§",
+	StrID_Rotate_Param_Name,		"æ—‹è½¬è§’åº¦",
+	StrID_Rotate_Scale_Param_Name,	"æ—‹è½¬ç¼©æ”¾",
+	StrID_Single_Scale_Group_Name,	"ç´¯ç§¯ç¼©æ”¾å±æ€§",
+	StrID_Single_Scale_Param_Name,	"ç´¯ç§¯ç¼©æ”¾",
+	StrID_Max_Dur_Name,				"æœ€å¤§æŒç»­æ—¶é—´ (ç§’)",
+	StrID_Xfer_Mode_Name,			"æ··åˆæ¨¡å¼",
+	StrID_Xfer_Mode_Choices,		"å‘å‰è¦†ç›–|"
+									"å‘åè¦†ç›–|"
 									"(-|"
-									"ÈÜ½â|"
-									"Ïà¼Ó|"
-									"Ïà³Ë|"
-									"ÆÁÄ»|"
-									"µş¼Ó|"
-									"Èá¹â|"
-									"Ç¿¹â|"
-									"±ä°µ|"
-									"±äÁÁ|"
-									"²îÒì|"
-									"É«Ïà|"
-									"±¥ºÍ¶È|"
-									"ÑÕÉ«|"
-									"·¢¹â¶È|"
-									"Alpha Ìí¼Ó|"
-									"ÅÅ³ı|"
-									"Ïà¼õ|"
-									"Ïà³ı",
-	StrID_Second_Layer_Name,		"µÚ¶şÍ¼²ã",
-	StrID_Random_Name,				"ÓÃÀ´Ë¢ĞÂäÖÈ¾µÄ±¿±¿»¬Ìõ",
+									"æº¶è§£|"
+									"ç›¸åŠ |"
+									"ç›¸ä¹˜|"
+									"å±å¹•|"
+									"å åŠ |"
+									"æŸ”å…‰|"
+									"å¼ºå…‰|"
+									"å˜æš—|"
+									"å˜äº®|"
+									"å·®å¼‚|"
+									"è‰²ç›¸|"
+									"é¥±å’Œåº¦|"
+									"é¢œè‰²|"
+									"å‘å…‰åº¦|"
+									"Alpha æ·»åŠ |"
+									"æ’é™¤|"
+									"ç›¸å‡|"
+									"ç›¸é™¤",
+	StrID_Second_Layer_Name,		"ç¬¬äºŒå›¾å±‚",
+	StrID_Random_Name,				"ç”¨æ¥åˆ·æ–°æ¸²æŸ“çš„ç¬¨ç¬¨æ»‘æ¡",
 };
 
 TableString		en_strs[StrID_NUMTYPES] = {
@@ -84,6 +69,7 @@ TableString		en_strs[StrID_NUMTYPES] = {
 	StrID_Name,						PLUGIN_ID,
 	StrID_Description,				"Clone layers triggered by keyframes, Made by BadGun.\n\nOpen source at https://github.com/MixBadGun/Keyframe-Trigger",
 	StrID_Gain_Param_Name,			"Controller",
+	StrID_Count_Param_Name,			"Count",
 	StrID_Start_Time_Param_Name,	"Start Time",
 	StrID_Playrate_Param_Name,		"Play Rate",
 	StrID_Is_Control_Param_Name,	"Controller Affects Offset",
@@ -103,6 +89,8 @@ TableString		en_strs[StrID_NUMTYPES] = {
 	StrID_Rotate_Group_Name,		"Rotation Properties",
 	StrID_Rotate_Param_Name,		"Rotation Angle",
 	StrID_Rotate_Scale_Param_Name,	"Rotation Scale",
+	StrID_Single_Scale_Group_Name,	"Cumulative Scale Properties",
+	StrID_Single_Scale_Param_Name,	"Cumulative Scale",
 	StrID_Max_Dur_Name,				"Max Duration (seconds)",
 	StrID_Xfer_Mode_Name,			"Blend Mode",
 	StrID_Xfer_Mode_Choices,		"Foreground Over|"
@@ -133,9 +121,31 @@ TableString		en_strs[StrID_NUMTYPES] = {
 
 char	*GetStringPtr(int strNum, A_char* lang_tagZ = nullptr)
 {
-	if (lang_tagZ && strcmp(lang_tagZ, "zh_CN") == 0) {
-		return zh_strs[strNum].str;
-	} else {
-		return en_strs[strNum].str;
+	if (lang_tagZ) {
+		if (strcmp(lang_tagZ, "zh_CN") == 0){
+			return zh_strs[strNum].str;
+		}
+		if (strcmp(lang_tagZ, "en_US") == 0) {
+			return en_strs[strNum].str;
+		}
+		if (strcmp(lang_tagZ, "fr_FR") == 0) {
+			// TODO...
+		}
+		if (strcmp(lang_tagZ, "de_DE") == 0) {
+			// TODO...
+		}
+		if (strcmp(lang_tagZ, "it_IT") == 0) {
+			// TODO...
+		}
+		if (strcmp(lang_tagZ, "ja_JP") == 0) {
+			// TODO...
+		}
+		if (strcmp(lang_tagZ, "ko_KR") == 0) {
+			// TODO...
+		}
+		if (strcmp(lang_tagZ, "es_ES") == 0) {
+			// TODO...
+		}
 	}
+	return en_strs[strNum].str;
 }

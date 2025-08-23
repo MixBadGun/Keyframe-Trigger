@@ -1,12 +1,16 @@
-#define HAS_CUDA 0
+#define HAS_CUDA 1
+#define __CUDACC__ 1
 
+#define __CUDA_INTERNAL_COMPILATION__
 #include "KTrigger_GPU.h"
-#if HAS_CUDA
-    #include <cuda_runtime.h>
-#endif
 #include <device_launch_parameters.h>
 #include "PrGPU/KernelSupport/KernelCore.h"
 #include "PrGPU/KernelSupport/KernelMemory.h"
+#undef __CUDA_INTERNAL_COMPILATION__
+
+#if HAS_CUDA
+    #include <cuda_runtime.h>
+#endif
 
 #if HAS_CUDA
 
@@ -16,8 +20,8 @@ void ClearToTransparentBlack_CUDA(float* output, int width, int height, int pitc
     dim3 gridSize((width + blockSize.x - 1) / blockSize.x, 
                   (height + blockSize.y - 1) / blockSize.y);
     
-    clear_to_transparent_black_kernel<<<gridSize, blockSize>>>(
-        (float4*)output, width, height, pitch);
+    // clear_to_transparent_black_kernel<<<gridSize, blockSize>>>(
+    //     (float4*)output, width, height, pitch);
     
     cudaDeviceSynchronize();
 }

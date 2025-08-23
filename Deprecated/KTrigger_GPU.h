@@ -1,5 +1,3 @@
-#define HAS_CUDA 0
-
 #pragma once
 #ifndef KTGPU_H
 #define KTGPU_H
@@ -71,7 +69,8 @@ struct OpenCLGPUData {
 };
 
 void ClearToTransparentBlack_CUDA(float* output, int width, int height, int pitch);
-PF_Err CompositeLayer_CUDA(
+
+extern PF_Err CompositeLayer_CUDA(
     const float* src,
     float* dst,
     int src_width,
@@ -101,5 +100,7 @@ typedef struct {
 PF_Err GPUDeviceSetup(PF_InData *in_dataP, PF_OutData *out_dataP, PF_GPUDeviceSetupExtra *extraP);
 
 PF_Err GPUDeviceSetdown(PF_InData *in_dataP, PF_OutData *out_dataP, PF_GPUDeviceSetdownExtra *extraP);
+
+PF_Err SmartRenderGPU(PF_InData *in_data, PF_OutData *out_data, PF_SmartRenderExtra *extra);
 
 #endif

@@ -21,11 +21,15 @@
 
 #pragma once
 
+#include <string.h>
+#include "KTrigger.h"
+
 typedef enum {
 	StrID_NONE, 
 	StrID_Name,
 	StrID_Description,
 	StrID_Gain_Param_Name,
+	StrID_Count_Param_Name,
 	StrID_Start_Time_Param_Name,
 	StrID_Playrate_Param_Name,
 	StrID_Is_Control_Param_Name,
@@ -44,6 +48,8 @@ typedef enum {
 	StrID_Rotate_Group_Name,
 	StrID_Rotate_Param_Name,
 	StrID_Rotate_Scale_Param_Name,
+	StrID_Single_Scale_Group_Name,
+	StrID_Single_Scale_Param_Name,
 	StrID_Max_Dur_Name,
 	StrID_Xfer_Mode_Name,
 	StrID_Xfer_Mode_Choices,
