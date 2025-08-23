@@ -682,7 +682,7 @@ Render(
 			} else {
 				single_scale_size = params[SINGLE_SCALE_DISK_ID]->u.fs_d.value / 100;
 			}
-			ApplyScaleMatrix(pow(single_scale_size, state + 1), false, &matrix);
+			ApplyScaleMatrix(pow(single_scale_size, state), false, &matrix);
 			//// 旋转部分
 			PF_FpLong angle = 0;
 			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
@@ -1170,7 +1170,7 @@ PreRender(
 								in_data->time_scale,
 								&currentDef));
 							single_scale_size = currentDef.u.fs_d.value / 100;
-							ApplyScaleMatrix(pow(single_scale_size, state + 1), false, &matrix);
+							ApplyScaleMatrix(pow(single_scale_size, state), false, &matrix);
 							//// 旋转部分
 							PF_FpLong angle = 0;
 							AEFX_CLR_STRUCT(currentDef);
