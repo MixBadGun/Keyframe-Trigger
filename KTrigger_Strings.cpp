@@ -10,6 +10,7 @@ typedef struct {
 	A_char		str[380];
 } TableString;
 
+// 简体中文 zh_CN
 TableString		zh_strs[StrID_NUMTYPES] = {
 	StrID_NONE,						"",
 	StrID_Name,						PLUGIN_ID,
@@ -64,6 +65,7 @@ TableString		zh_strs[StrID_NUMTYPES] = {
 	StrID_Random_Name,				"用来刷新渲染的笨笨滑条",
 };
 
+// English en_US
 TableString		en_strs[StrID_NUMTYPES] = {
 	StrID_NONE,						"",
 	StrID_Name,						PLUGIN_ID,
@@ -116,6 +118,129 @@ TableString		en_strs[StrID_NUMTYPES] = {
 									"Divide",
 	StrID_Second_Layer_Name,		"Second Layer",
 	StrID_Random_Name,				"Dummy Slider for Refresh Rendering",
+};
+
+
+/*
+* ############################
+* 此处需要翻译。
+* This part needs translation.
+* ############################
+*/ 
+// 한국어 ko_KR
+TableString		ko_strs[StrID_NUMTYPES] = {
+	StrID_NONE,						"",
+	StrID_Name,						PLUGIN_ID,
+	StrID_Description,				"通过关键帧触发以克隆图层的效果, Made by 坏枪.\n\n项目开源在 https://github.com/MixBadGun/Keyframe-Trigger",
+	StrID_Gain_Param_Name,			"控制器",
+	StrID_Count_Param_Name,			"数量",
+	StrID_Start_Time_Param_Name,	"起始时间",
+	StrID_Playrate_Param_Name,		"播放速率",
+	StrID_Is_Control_Param_Name,	"控制器影响偏移",
+	StrID_Is_Frozen_Name,			"生成后冻结状态",
+	StrID_Anchor_Param_Name,		"锚点",
+	StrID_Scale_Size_Name,			"缩放大小",
+	StrID_Is_Flip_Param_Name,		"水平翻转",
+	StrID_Switch_Param_Name,		"偏移模式",
+	StrID_Switch_Popup_Choices,		"位置|"
+									"旋转",
+	StrID_Return_Group_Name,		"序列属性",
+	StrID_Return_Param_Name,		"折返来回",
+	StrID_Return2_Param_Name,		"（折返）遇首尾不重复",
+	StrID_Offset_Group_Name,		"位置属性",
+	StrID_Offset_Param_Name,		"位置偏移",
+	StrID_Offset_Count_Param_Name,	"序列数量",
+	StrID_Rotate_Group_Name,		"旋转属性",
+	StrID_Rotate_Param_Name,		"旋转角度",
+	StrID_Rotate_Scale_Param_Name,	"旋转缩放",
+	StrID_Single_Scale_Group_Name,	"累积缩放属性",
+	StrID_Single_Scale_Param_Name,	"累积缩放",
+	StrID_Max_Dur_Name,				"最大持续时间 (秒)",
+	StrID_Xfer_Mode_Name,			"混合模式",
+	StrID_Xfer_Mode_Choices,		"向前覆盖|"
+									"向后覆盖|"
+									"(-|"
+									"溶解|"
+									"相加|"
+									"相乘|"
+									"屏幕|"
+									"叠加|"
+									"柔光|"
+									"强光|"
+									"变暗|"
+									"变亮|"
+									"差异|"
+									"色相|"
+									"饱和度|"
+									"颜色|"
+									"发光度|"
+									"Alpha 添加|"
+									"排除|"
+									"相减|"
+									"相除",
+	StrID_Second_Layer_Name,		"第二图层",
+	StrID_Random_Name,				"用来刷新渲染的笨笨滑条",
+};
+
+/*
+* ############################
+* 此处需要翻译。
+* This part needs translation.
+* ############################
+*/ 
+// 日本語 ja_JP
+TableString		ja_strs[StrID_NUMTYPES] = {
+	StrID_NONE,						"",
+	StrID_Name,						PLUGIN_ID,
+	StrID_Description,				"通过关键帧触发以克隆图层的效果, Made by 坏枪.\n\n项目开源在 https://github.com/MixBadGun/Keyframe-Trigger",
+	StrID_Gain_Param_Name,			"控制器",
+	StrID_Count_Param_Name,			"数量",
+	StrID_Start_Time_Param_Name,	"起始时间",
+	StrID_Playrate_Param_Name,		"播放速率",
+	StrID_Is_Control_Param_Name,	"控制器影响偏移",
+	StrID_Is_Frozen_Name,			"生成后冻结状态",
+	StrID_Anchor_Param_Name,		"锚点",
+	StrID_Scale_Size_Name,			"缩放大小",
+	StrID_Is_Flip_Param_Name,		"水平翻转",
+	StrID_Switch_Param_Name,		"偏移模式",
+	StrID_Switch_Popup_Choices,		"位置|"
+									"旋转",
+	StrID_Return_Group_Name,		"序列属性",
+	StrID_Return_Param_Name,		"折返来回",
+	StrID_Return2_Param_Name,		"（折返）遇首尾不重复",
+	StrID_Offset_Group_Name,		"位置属性",
+	StrID_Offset_Param_Name,		"位置偏移",
+	StrID_Offset_Count_Param_Name,	"序列数量",
+	StrID_Rotate_Group_Name,		"旋转属性",
+	StrID_Rotate_Param_Name,		"旋转角度",
+	StrID_Rotate_Scale_Param_Name,	"旋转缩放",
+	StrID_Single_Scale_Group_Name,	"累积缩放属性",
+	StrID_Single_Scale_Param_Name,	"累积缩放",
+	StrID_Max_Dur_Name,				"最大持续时间 (秒)",
+	StrID_Xfer_Mode_Name,			"混合模式",
+	StrID_Xfer_Mode_Choices,		"向前覆盖|"
+									"向后覆盖|"
+									"(-|"
+									"溶解|"
+									"相加|"
+									"相乘|"
+									"屏幕|"
+									"叠加|"
+									"柔光|"
+									"强光|"
+									"变暗|"
+									"变亮|"
+									"差异|"
+									"色相|"
+									"饱和度|"
+									"颜色|"
+									"发光度|"
+									"Alpha 添加|"
+									"排除|"
+									"相减|"
+									"相除",
+	StrID_Second_Layer_Name,		"第二图层",
+	StrID_Random_Name,				"用来刷新渲染的笨笨滑条",
 };
 
 
