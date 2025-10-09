@@ -1,4 +1,4 @@
-ï»¿/*******************************************************************/
+/*******************************************************************/
 /*                                                                 */
 /*                      ADOBE CONFIDENTIAL                         */
 /*                   _ _ _ _ _ _ _ _ _ _ _ _ _                     */
@@ -107,7 +107,7 @@ ParamsSetup (
 
 	AEFX_CLR_STRUCT(def);
 
-	// æ–°å¢çš„æ•°é‡
+	// ĞÂÔöµÄÊıÁ¿
 	PF_ADD_FLOAT_SLIDERX(STR(StrID_Count_Param_Name),
 		0,
 		10000,
@@ -186,7 +186,7 @@ ParamsSetup (
 
 	AEFX_CLR_STRUCT(def);
 
-	//// å·²å¼ƒç”¨
+	//// ÒÑÆúÓÃ
 
 	// PF_ADD_POPUP(STR(StrID_Switch_Param_Name),
 	// 	2,
@@ -256,7 +256,7 @@ ParamsSetup (
 	AEFX_CLR_STRUCT(def);
 	PF_END_TOPIC(ROTATE_GROUP_END_ID);
 
-	// ç´¯è®¡å•ä¸ªç¼©æ”¾
+	// ÀÛ¼Æµ¥¸öËõ·Å
 	AEFX_CLR_STRUCT(def);
 	PF_ADD_TOPIC(STR(StrID_Single_Scale_Group_Name), SINGLE_SCALE_GROUP_ID);
 	AEFX_CLR_STRUCT(def);
@@ -444,34 +444,34 @@ Render(
 		&fkey_time,
 		&fkey_time_scale
 	));
-	if(fhasKey){
-		PF_FpLong ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
-		const PF_FpLong fmax_cache = params[MAX_DUR_DISK_ID]->u.fs_d.value;
-		while(ftime < fmax_cache){
-			if (!(findex > 0)) {
-				break;
-			}
-			findex -= 1;
-			ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
-				in_data->effect_ref,
-				SKELETON_GAIN,
-				findex,
-				&fkey_time,
-				&fkey_time_scale));
-			ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
-		}
-	}
-	else {
-		findex = 0;
-	}
+	// if(fhasKey){
+	// 	PF_FpLong ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
+	// 	const PF_FpLong fmax_cache = params[MAX_DUR_DISK_ID]->u.fs_d.value;
+	// 	while(ftime < fmax_cache){
+	// 		if (!(findex > 0)) {
+	// 			break;
+	// 		}
+	// 		findex -= 1;
+	// 		ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
+	// 			in_data->effect_ref,
+	// 			SKELETON_GAIN,
+	// 			findex,
+	// 			&fkey_time,
+	// 			&fkey_time_scale));
+	// 		ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
+	// 	}
+	// }
+	// else {
+	// 	findex = 0;
+	// }
 
 	PF_FpLong anchor_x = FIX_2_FLOAT(params[ANCHOR_DISK_ID]->u.td.x_value);
 	PF_FpLong anchor_y = FIX_2_FLOAT(params[ANCHOR_DISK_ID]->u.td.y_value);
 
 
-	A_long real_index = -1; // çœŸå®ç´¯è®¡é‡
+	A_long real_index = -1; // ÕæÊµÀÛ¼ÆÁ¿
 
-	for (int i = findex;i < keyframes;i++) {
+	for (int i = 0;i < keyframes;i++) {
 		A_long key_time = 0;
 		A_u_long key_time_scale = 0;
 		ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
@@ -487,15 +487,8 @@ Render(
 		if (ctime - key_time > in_data->total_time){
 			continue;
 		}
-		if (key_time_scale != 0) {
-			const PF_FpLong time = PF_FABS((ctime - key_time) / (double)key_time_scale);
-			const PF_FpLong max_cache = params[MAX_DUR_DISK_ID]->u.fs_d.value;
-			if (time > max_cache) {
-				continue;
-			}
-		}
 
-		// è·å–åœ¨å½“å‰æ—¶é—´ä¸‹çš„æ•°é‡å€¼
+		// »ñÈ¡ÔÚµ±Ç°Ê±¼äÏÂµÄÊıÁ¿Öµ
 		PF_ParamDef countDef;
 		AEFX_CLR_STRUCT(countDef);
 		ERR(PF_CHECKOUT_PARAM(
@@ -508,10 +501,18 @@ Render(
 		const A_long count = countDef.u.fs_d.value;
 		PF_CHECKIN_PARAM(in_data, &countDef);
 
-		// å¼€å§‹å¾ªç¯å¤šæ¬¡
+		// ¿ªÊ¼Ñ­»·¶à´Î
 		for (int iy = 0; iy < count; iy++){
 			real_index++;
-			// ä»æ­¤åˆ»å¼€å§‹è®¡ç®—
+			// ¶ÔÓÚĞ¡ÓÚ¸ÃÊ±¼ä»º´æÖµµÄ£¬Ö±½Ó½øÈëÏÂÒ»²ãÑ­»·
+			if (key_time_scale != 0) {
+				const PF_FpLong time = (key_time - ctime) / (double)key_time_scale;
+				const PF_FpLong max_cache = params[MAX_DUR_DISK_ID]->u.fs_d.value;
+				if (time > max_cache) {
+					continue;
+				}
+			}
+			// ´Ó´Ë¿Ì¿ªÊ¼¼ÆËã
 			PF_FloatMatrix matrix = { {
 				{1,0,0},
 				{0,1,0},
@@ -663,8 +664,8 @@ Render(
 					state = real_index;
 				}
 			}
-			//// æ¥ä¸‹æ¥è¿›è¡ŒçŸ©é˜µçš„å˜æ¢ï¼Œé¡ºåºæ˜¯ç¼©æ”¾ -> æ—‹è½¬ -> ä½ç§»
-			//// ç´¯ç§¯ç¼©æ”¾éƒ¨åˆ†
+			//// ½ÓÏÂÀ´½øĞĞ¾ØÕóµÄ±ä»»£¬Ë³ĞòÊÇËõ·Å -> Ğı×ª -> Î»ÒÆ
+			//// ÀÛ»ıËõ·Å²¿·Ö
 			PF_FpLong single_scale_size = 1;
 			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
 				PF_ParamDef currentDef;
@@ -683,7 +684,7 @@ Render(
 				single_scale_size = params[SINGLE_SCALE_DISK_ID]->u.fs_d.value / 100;
 			}
 			ApplyScaleMatrix(pow(single_scale_size, state), false, &matrix);
-			//// æ—‹è½¬éƒ¨åˆ†
+			//// Ğı×ª²¿·Ö
 			PF_FpLong angle = 0;
 			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
 				PF_ParamDef currentDef;
@@ -704,9 +705,9 @@ Render(
 				angle = FIX_2_FLOAT(params[ROTATE_DISK_ID]->u.ad.value) * state;
 			}
 			ApplyAngleMatrix(angle, &matrix);
-			// æ—‹è½¬ç¼©æ”¾
+			// Ğı×ªËõ·Å
 			ApplyScaleMatrix(params[ROTATE_SCALE_DISK_ID]->u.fs_d.value / 100, false, &matrix);
-			//// ä½ç§»éƒ¨åˆ†
+			//// Î»ÒÆ²¿·Ö
 			PF_FpLong x_offset = 0;
 			PF_FpLong y_offset = 0;
 			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
@@ -730,7 +731,7 @@ Render(
 				y_offset = FIX_2_FLOAT(params[OFFSET_DISK_ID]->u.td.y_value);
 			}
 			ApplyTranslateMatrix(x_offset * state, y_offset * state, &matrix);
-			// ç§»å›å»
+			// ÒÆ»ØÈ¥
 			ApplyTranslateMatrix(-anchor_x, -anchor_y, &matrix);
 			ERR(in_data->utils->transform_world(
 				in_data->effect_ref,
@@ -752,7 +753,7 @@ Render(
 	return err;
 }
 
-// SmartRender é¢„å¤„ç†
+// SmartRender Ô¤´¦Àí
 
 static PF_Err
 PreRender(
@@ -897,51 +898,51 @@ PreRender(
 					ERR(suites.ParamUtilsSuite3()->PF_GetKeyframeCount(in_data->effect_ref,
 						SKELETON_GAIN,
 						&keyframes));
-					PF_KeyIndex findex = 0;
-					PF_Boolean fhasKey = false;
-					A_long fkey_time = 0;
-					A_u_long fkey_time_scale = 0;
-					ERR(suites.ParamUtilsSuite3()->PF_FindKeyframeTime(in_data->effect_ref,
-						SKELETON_GAIN,
-						ctime,
-						in_data->time_scale,
-						PF_TimeDir_LESS_THAN_OR_EQUAL,
-						&fhasKey,
-						&findex,
-						&fkey_time,
-						&fkey_time_scale
-					));
-					if (fhasKey) {
-						PF_FpLong ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
-						PF_ParamDef tempDef;
-						AEFX_CLR_STRUCT(tempDef);
-						ERR(PF_CHECKOUT_PARAM(in_data,
-							MAX_DUR_DISK_ID,
-							ctime,
-							in_data->time_step,
-							in_data->time_scale,
-							&tempDef));
-						const PF_FpLong fmax_cache = tempDef.u.fs_d.value;
-						while (ftime < fmax_cache) {
-							if (!(findex > 0)) {
-								break;
-							}
-							findex -= 1;
-							ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
-								in_data->effect_ref,
-								SKELETON_GAIN,
-								findex,
-								&fkey_time,
-								&fkey_time_scale));
-							ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
-						}
-					}
-					else {
-						findex = 0;
-					}
+					// PF_KeyIndex findex = 0;
+					// PF_Boolean fhasKey = false;
+					// A_long fkey_time = 0;
+					// A_u_long fkey_time_scale = 0;
+					// ERR(suites.ParamUtilsSuite3()->PF_FindKeyframeTime(in_data->effect_ref,
+					// 	SKELETON_GAIN,
+					// 	ctime,
+					// 	in_data->time_scale,
+					// 	PF_TimeDir_LESS_THAN_OR_EQUAL,
+					// 	&fhasKey,
+					// 	&findex,
+					// 	&fkey_time,
+					// 	&fkey_time_scale
+					// ));
+					// if (fhasKey) {
+					// 	PF_FpLong ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
+					// 	PF_ParamDef tempDef;
+					// 	AEFX_CLR_STRUCT(tempDef);
+					// 	ERR(PF_CHECKOUT_PARAM(in_data,
+					// 		MAX_DUR_DISK_ID,
+					// 		ctime,
+					// 		in_data->time_step,
+					// 		in_data->time_scale,
+					// 		&tempDef));
+					// 	const PF_FpLong fmax_cache = tempDef.u.fs_d.value;
+					// 	while (ftime < fmax_cache) {
+					// 		if (!(findex > 0)) {
+					// 			break;
+					// 		}
+					// 		findex -= 1;
+					// 		ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
+					// 			in_data->effect_ref,
+					// 			SKELETON_GAIN,
+					// 			findex,
+					// 			&fkey_time,
+					// 			&fkey_time_scale));
+					// 		ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
+					// 	}
+					// }
+					// else {
+					// 	findex = 0;
+					// }
 					A_long storage_num = 0;
-					A_long real_index = -1; // çœŸå®ç´¯è®¡é‡
-					for (int i = findex;i < keyframes;i++) {
+					A_long real_index = -1; // ÕæÊµÀÛ¼ÆÁ¿
+					for (int i = 0;i < keyframes;i++) {
 						A_long key_time = 0;
 						A_u_long key_time_scale = 0;
 						ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
@@ -956,13 +957,6 @@ PreRender(
 						if (ctime - key_time > in_data->total_time) {
 							continue;
 						}
-						if (key_time_scale != 0) {
-							const PF_FpLong time = PF_FABS((ctime - key_time) / (double)key_time_scale);
-							const PF_FpLong max_cache = maxdurDef.u.fs_d.value;
-							if (time > max_cache) {
-								continue;
-							}
-						}
 
 						ERR(PF_CHECKOUT_PARAM(
 							in_data,
@@ -974,6 +968,15 @@ PreRender(
 						const A_long count = countDef.u.fs_d.value;
 						for(int iy = 0; iy < count; iy++){
 							real_index++;
+							// Èç¹ûµ±Ç°Ê±¼ä´óÓÚ»º´æÖµ£¬¾ÍÖ±½Ó½øÈëÏÂÒ»²ã
+							if (key_time_scale != 0) {
+								const PF_FpLong time = (ctime - key_time) / (double)key_time_scale;
+								const PF_FpLong max_cache = maxdurDef.u.fs_d.value;
+								if (time > max_cache) {
+									continue;
+								}
+							}
+
 							storage_num++;
 							LayerInfo storageInfo;
 							AEFX_CLR_STRUCT(storageInfo);
@@ -1157,8 +1160,8 @@ PreRender(
 							if (isfrozenDef.u.bd.value) {
 								check_time = key_time;
 							}
-							//// æ¥ä¸‹æ¥è¿›è¡ŒçŸ©é˜µçš„å˜æ¢ï¼Œé¡ºåºæ˜¯ç¼©æ”¾ -> æ—‹è½¬ -> ä½ç§»
-							//// ç´¯ç§¯ç¼©æ”¾éƒ¨åˆ†
+							//// ½ÓÏÂÀ´½øĞĞ¾ØÕóµÄ±ä»»£¬Ë³ĞòÊÇËõ·Å -> Ğı×ª -> Î»ÒÆ
+							//// ÀÛ»ıËõ·Å²¿·Ö
 							PF_FpLong single_scale_size = 1;
 							PF_ParamDef currentDef;
 							AEFX_CLR_STRUCT(currentDef);
@@ -1171,7 +1174,7 @@ PreRender(
 								&currentDef));
 							single_scale_size = currentDef.u.fs_d.value / 100;
 							ApplyScaleMatrix(pow(single_scale_size, state), false, &matrix);
-							//// æ—‹è½¬éƒ¨åˆ†
+							//// Ğı×ª²¿·Ö
 							PF_FpLong angle = 0;
 							AEFX_CLR_STRUCT(currentDef);
 							ERR(PF_CHECKOUT_PARAM(
@@ -1183,9 +1186,9 @@ PreRender(
 								&currentDef));
 							angle = FIX_2_FLOAT(currentDef.u.ad.value) * state;
 							ApplyAngleMatrix(angle, &matrix);
-							// æ—‹è½¬ç¼©æ”¾
+							// Ğı×ªËõ·Å
 							ApplyScaleMatrix(rotatescaleDef.u.fs_d.value / 100, false, &matrix);
-							//// ä½ç§»éƒ¨åˆ†
+							//// Î»ÒÆ²¿·Ö
 							PF_FpLong x_offset = 0;
 							PF_FpLong y_offset = 0;
 							AEFX_CLR_STRUCT(currentDef);
@@ -1199,7 +1202,7 @@ PreRender(
 							x_offset = FIX_2_FLOAT(currentDef.u.td.x_value) * state;
 							y_offset = FIX_2_FLOAT(currentDef.u.td.y_value) * state;
 							ApplyTranslateMatrix(x_offset, y_offset, &matrix);
-							// ç§»å›å»
+							// ÒÆ»ØÈ¥
 							ApplyTranslateMatrix(-anchor_x, -anchor_y, &matrix);
 
 							storageInfo.matrix = matrix;
@@ -1304,7 +1307,7 @@ SmartRender(
 	PF_Err				err = PF_Err_NONE,
 		err2 = PF_Err_NONE;
 
-	//// å¾ˆæŠ±æ­‰ï¼Œå®ç°GPUç¡®å®å¤ªéº»çƒ¦äº†ï¼Œæ‰€ä»¥æ²¡æœ‰äº†ã€‚ã€‚ã€‚
+	//// ºÜ±§Ç¸£¬ÊµÏÖGPUÈ·ÊµÌ«Âé·³ÁË£¬ËùÒÔÃ»ÓĞÁË¡£¡£¡£
 	// if(use_gpu){
 	// 	ERR(SmartRenderGPU(
 	// 		in_data,
@@ -1397,7 +1400,7 @@ EffectMain(
 				err = SmartRender(in_data, out_data, (PF_SmartRenderExtra*)extra, false);
 				break;
 
-			//// å¾ˆæŠ±æ­‰ï¼Œå®ç°GPUç¡®å®å¤ªéº»çƒ¦äº†ï¼Œæ‰€ä»¥æ²¡æœ‰äº†ã€‚ã€‚ã€‚
+			//// ºÜ±§Ç¸£¬ÊµÏÖGPUÈ·ÊµÌ«Âé·³ÁË£¬ËùÒÔÃ»ÓĞÁË¡£¡£¡£
 			// case PF_Cmd_GPU_DEVICE_SETUP:
 			// 	err = GPUDeviceSetup(in_data, out_data, (PF_GPUDeviceSetupExtra *)extra);
 			// 	break;
