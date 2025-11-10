@@ -30,6 +30,7 @@ typedef enum {
 	StrID_Description,
 	StrID_Gain_Param_Name,
 	StrID_Count_Param_Name,
+	StrID_Max_Count_Param_Name,
 	StrID_Start_Time_Param_Name,
 	StrID_Playrate_Param_Name,
 	StrID_Is_Control_Param_Name,

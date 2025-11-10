@@ -120,6 +120,19 @@ ParamsSetup (
 		COUNT_DISK_ID);
 	AEFX_CLR_STRUCT(def);
 
+	// 同时可存在的最大数量
+	PF_ADD_FLOAT_SLIDERX(STR(StrID_Max_Count_Param_Name),
+		0,
+		1000000000,
+		0,
+		100,
+		100,
+		PF_Precision_INTEGER,
+		0,
+		0,
+		MAX_COUNT_DISK_ID);
+	AEFX_CLR_STRUCT(def);
+
 	PF_ADD_FLOAT_SLIDERX(STR(StrID_Start_Time_Param_Name),
 		0,
 		1000000,
@@ -468,6 +481,40 @@ Render(
 	PF_FpLong anchor_x = FIX_2_FLOAT(params[ANCHOR_DISK_ID]->u.td.x_value);
 	PF_FpLong anchor_y = FIX_2_FLOAT(params[ANCHOR_DISK_ID]->u.td.y_value);
 
+	// 找到当前时间对应的最大累积量（即离当前时间最近的关键帧的 real_index 对应值）
+	A_long max_real_index = -1;
+	for (int i = 0;i < keyframes;i++) {
+		A_long key_time = 0;
+		A_u_long key_time_scale = 0;
+		ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
+			in_data->effect_ref,
+			SKELETON_GAIN,
+			i,
+			&key_time,
+			&key_time_scale));
+
+		if (ctime < key_time) {
+			break;
+		}
+		if (ctime - key_time > in_data->total_time){
+			continue;
+		}
+
+		// 获取在当前时间下的数量值
+		PF_ParamDef countDef;
+		AEFX_CLR_STRUCT(countDef);
+		ERR(PF_CHECKOUT_PARAM(
+			in_data,
+			COUNT_DISK_ID,
+			key_time,
+			in_data->time_step,
+			in_data->time_scale,
+			&countDef));
+		const A_long count = countDef.u.fs_d.value;
+		PF_CHECKIN_PARAM(in_data, &countDef);
+
+		max_real_index += count;
+	}
 
 	A_long real_index = -1; // 真实累计量
 
@@ -504,6 +551,10 @@ Render(
 		// 开始循环多次
 		for (int iy = 0; iy < count; iy++){
 			real_index++;
+			// 如果在最大累积量之外，就不进行处理
+			if (max_real_index - params[MAX_COUNT_DISK_ID]->u.fs_d.value >= real_index) {
+				continue;
+			}
 			// 对于小于该时间缓存值的，直接进入下一层循环
 			if (key_time_scale != 0) {
 				const PF_FpLong time = (key_time - ctime) / (double)key_time_scale;
@@ -810,7 +861,7 @@ PreRender(
 
 					// ???????
 					PF_ParamDef isflipDef, isfrozenDef, maxdurDef, offsetcountDef, isconDef,
-						returnDef, return2Def, rotatescaleDef, xferDef, anchorDef, countDef;
+						returnDef, return2Def, rotatescaleDef, xferDef, anchorDef, countDef, maxcountDef;
 					AEFX_CLR_STRUCT(isflipDef);
 					AEFX_CLR_STRUCT(isfrozenDef);
 					AEFX_CLR_STRUCT(maxdurDef);
@@ -822,6 +873,7 @@ PreRender(
 					AEFX_CLR_STRUCT(xferDef);
 					AEFX_CLR_STRUCT(anchorDef);
 					AEFX_CLR_STRUCT(countDef);
+					AEFX_CLR_STRUCT(maxcountDef);
 					ERR(PF_CHECKOUT_PARAM(in_data,
 						IS_FLIP_DISK_ID,
 						ctime,
@@ -888,6 +940,12 @@ PreRender(
 						in_data->time_step,
 						in_data->time_scale,
 						&anchorDef));
+					ERR(PF_CHECKOUT_PARAM(in_data,
+						MAX_COUNT_DISK_ID,
+						ctime,
+						in_data->time_step,
+						in_data->time_scale,
+						&maxcountDef));
 
 					PF_FpLong anchor_x = FIX_2_FLOAT(anchorDef.u.td.x_value);
 					PF_FpLong anchor_y = FIX_2_FLOAT(anchorDef.u.td.y_value);
@@ -940,6 +998,37 @@ PreRender(
 					// else {
 					// 	findex = 0;
 					// }
+
+					// 找到当前时间对应的最大累积量（即离当前时间最近的关键帧的 real_index 对应值）
+					A_long max_real_index = -1;
+					for (int i = 0;i < keyframes;i++) {
+						A_long key_time = 0;
+						A_u_long key_time_scale = 0;
+						ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
+							in_data->effect_ref,
+							SKELETON_GAIN,
+							i,
+							&key_time,
+							&key_time_scale));
+						if (ctime < key_time) {
+							break;
+						}
+						if (ctime - key_time > in_data->total_time) {
+							continue;
+						}
+
+						ERR(PF_CHECKOUT_PARAM(
+							in_data,
+							COUNT_DISK_ID,
+							key_time,
+							in_data->time_step,
+							in_data->time_scale,
+							&countDef));
+						const A_long count = countDef.u.fs_d.value;
+						max_real_index += count;
+					}
+
+
 					A_long storage_num = 0;
 					A_long real_index = -1; // 真实累计量
 					for (int i = 0;i < keyframes;i++) {
@@ -968,6 +1057,10 @@ PreRender(
 						const A_long count = countDef.u.fs_d.value;
 						for(int iy = 0; iy < count; iy++){
 							real_index++;
+							// 如果在最大累积量之外，就不进行处理
+							if (max_real_index - maxcountDef.u.fs_d.value >= real_index) {
+								continue;
+							}
 							// 如果当前时间大于缓存值，就直接进入下一层
 							if (key_time_scale != 0) {
 								const PF_FpLong time = (ctime - key_time) / (double)key_time_scale;
