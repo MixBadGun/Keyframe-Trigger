@@ -1,4 +1,4 @@
-/*******************************************************************/
+ï»¿/*******************************************************************/
 /*                                                                 */
 /*                      ADOBE CONFIDENTIAL                         */
 /*                   _ _ _ _ _ _ _ _ _ _ _ _ _                     */
@@ -107,7 +107,7 @@ ParamsSetup (
 
 	AEFX_CLR_STRUCT(def);
 
-	// ĞÂÔöµÄÊıÁ¿
+	// æ–°å¢çš„æ•°é‡
 	PF_ADD_FLOAT_SLIDERX(STR(StrID_Count_Param_Name),
 		0,
 		10000,
@@ -120,7 +120,7 @@ ParamsSetup (
 		COUNT_DISK_ID);
 	AEFX_CLR_STRUCT(def);
 
-	// Í¬Ê±¿É´æÔÚµÄ×î´óÊıÁ¿
+	// åŒæ—¶å¯å­˜åœ¨çš„æœ€å¤§æ•°é‡
 	PF_ADD_FLOAT_SLIDERX(STR(StrID_Max_Count_Param_Name),
 		0,
 		1000000000,
@@ -173,8 +173,8 @@ ParamsSetup (
 	AEFX_CLR_STRUCT(def);
 
 	PF_ADD_POINT(STR(StrID_Anchor_Param_Name),
-		INT2FIX(in_data->width / 2),
-		INT2FIX(in_data->height / 2),
+		50,
+		50,
 		0,
 		ANCHOR_DISK_ID
 	);
@@ -199,7 +199,7 @@ ParamsSetup (
 
 	AEFX_CLR_STRUCT(def);
 
-	//// ÒÑÆúÓÃ
+	//// å·²å¼ƒç”¨
 
 	// PF_ADD_POPUP(STR(StrID_Switch_Param_Name),
 	// 	2,
@@ -269,7 +269,7 @@ ParamsSetup (
 	AEFX_CLR_STRUCT(def);
 	PF_END_TOPIC(ROTATE_GROUP_END_ID);
 
-	// ÀÛ¼Æµ¥¸öËõ·Å
+	// ç´¯è®¡å•ä¸ªç¼©æ”¾
 	AEFX_CLR_STRUCT(def);
 	PF_ADD_TOPIC(STR(StrID_Single_Scale_Group_Name), SINGLE_SCALE_GROUP_ID);
 	AEFX_CLR_STRUCT(def);
@@ -481,7 +481,7 @@ Render(
 	PF_FpLong anchor_x = FIX_2_FLOAT(params[ANCHOR_DISK_ID]->u.td.x_value);
 	PF_FpLong anchor_y = FIX_2_FLOAT(params[ANCHOR_DISK_ID]->u.td.y_value);
 
-	// ÕÒµ½µ±Ç°Ê±¼ä¶ÔÓ¦µÄ×î´óÀÛ»ıÁ¿£¨¼´Àëµ±Ç°Ê±¼ä×î½üµÄ¹Ø¼üÖ¡µÄ real_index ¶ÔÓ¦Öµ£©
+	// æ‰¾åˆ°å½“å‰æ—¶é—´å¯¹åº”çš„æœ€å¤§ç´¯ç§¯é‡ï¼ˆå³ç¦»å½“å‰æ—¶é—´æœ€è¿‘çš„å…³é”®å¸§çš„ real_index å¯¹åº”å€¼ï¼‰
 	A_long max_real_index = -1;
 	for (int i = 0;i < keyframes;i++) {
 		A_long key_time = 0;
@@ -500,7 +500,7 @@ Render(
 			continue;
 		}
 
-		// »ñÈ¡ÔÚµ±Ç°Ê±¼äÏÂµÄÊıÁ¿Öµ
+		// è·å–åœ¨å½“å‰æ—¶é—´ä¸‹çš„æ•°é‡å€¼
 		PF_ParamDef countDef;
 		AEFX_CLR_STRUCT(countDef);
 		ERR(PF_CHECKOUT_PARAM(
@@ -516,7 +516,7 @@ Render(
 		max_real_index += count;
 	}
 
-	A_long real_index = -1; // ÕæÊµÀÛ¼ÆÁ¿
+	A_long real_index = -1; // çœŸå®ç´¯è®¡é‡
 
 	for (int i = 0;i < keyframes;i++) {
 		A_long key_time = 0;
@@ -535,7 +535,7 @@ Render(
 			continue;
 		}
 
-		// »ñÈ¡ÔÚµ±Ç°Ê±¼äÏÂµÄÊıÁ¿Öµ
+		// è·å–åœ¨å½“å‰æ—¶é—´ä¸‹çš„æ•°é‡å€¼
 		PF_ParamDef countDef;
 		AEFX_CLR_STRUCT(countDef);
 		ERR(PF_CHECKOUT_PARAM(
@@ -548,14 +548,14 @@ Render(
 		const A_long count = countDef.u.fs_d.value;
 		PF_CHECKIN_PARAM(in_data, &countDef);
 
-		// ¿ªÊ¼Ñ­»·¶à´Î
+		// å¼€å§‹å¾ªç¯å¤šæ¬¡
 		for (int iy = 0; iy < count; iy++){
 			real_index++;
-			// Èç¹ûÔÚ×î´óÀÛ»ıÁ¿Ö®Íâ£¬¾Í²»½øĞĞ´¦Àí
+			// å¦‚æœåœ¨æœ€å¤§ç´¯ç§¯é‡ä¹‹å¤–ï¼Œå°±ä¸è¿›è¡Œå¤„ç†
 			if (max_real_index - params[MAX_COUNT_DISK_ID]->u.fs_d.value >= real_index) {
 				continue;
 			}
-			// ¶ÔÓÚĞ¡ÓÚ¸ÃÊ±¼ä»º´æÖµµÄ£¬Ö±½Ó½øÈëÏÂÒ»²ãÑ­»·
+			// å¯¹äºå°äºè¯¥æ—¶é—´ç¼“å­˜å€¼çš„ï¼Œç›´æ¥è¿›å…¥ä¸‹ä¸€å±‚å¾ªç¯
 			if (key_time_scale != 0) {
 				const PF_FpLong time = (key_time - ctime) / (double)key_time_scale;
 				const PF_FpLong max_cache = params[MAX_DUR_DISK_ID]->u.fs_d.value;
@@ -563,7 +563,7 @@ Render(
 					continue;
 				}
 			}
-			// ´Ó´Ë¿Ì¿ªÊ¼¼ÆËã
+			// ä»æ­¤åˆ»å¼€å§‹è®¡ç®—
 			PF_FloatMatrix matrix = { {
 				{1,0,0},
 				{0,1,0},
@@ -715,8 +715,8 @@ Render(
 					state = real_index;
 				}
 			}
-			//// ½ÓÏÂÀ´½øĞĞ¾ØÕóµÄ±ä»»£¬Ë³ĞòÊÇËõ·Å -> Ğı×ª -> Î»ÒÆ
-			//// ÀÛ»ıËõ·Å²¿·Ö
+			//// æ¥ä¸‹æ¥è¿›è¡ŒçŸ©é˜µçš„å˜æ¢ï¼Œé¡ºåºæ˜¯ç¼©æ”¾ -> æ—‹è½¬ -> ä½ç§»
+			//// ç´¯ç§¯ç¼©æ”¾éƒ¨åˆ†
 			PF_FpLong single_scale_size = 1;
 			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
 				PF_ParamDef currentDef;
@@ -735,7 +735,7 @@ Render(
 				single_scale_size = params[SINGLE_SCALE_DISK_ID]->u.fs_d.value / 100;
 			}
 			ApplyScaleMatrix(pow(single_scale_size, state), false, &matrix);
-			//// Ğı×ª²¿·Ö
+			//// æ—‹è½¬éƒ¨åˆ†
 			PF_FpLong angle = 0;
 			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
 				PF_ParamDef currentDef;
@@ -756,9 +756,9 @@ Render(
 				angle = FIX_2_FLOAT(params[ROTATE_DISK_ID]->u.ad.value) * state;
 			}
 			ApplyAngleMatrix(angle, &matrix);
-			// Ğı×ªËõ·Å
+			// æ—‹è½¬ç¼©æ”¾
 			ApplyScaleMatrix(params[ROTATE_SCALE_DISK_ID]->u.fs_d.value / 100, false, &matrix);
-			//// Î»ÒÆ²¿·Ö
+			//// ä½ç§»éƒ¨åˆ†
 			PF_FpLong x_offset = 0;
 			PF_FpLong y_offset = 0;
 			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
@@ -782,7 +782,7 @@ Render(
 				y_offset = FIX_2_FLOAT(params[OFFSET_DISK_ID]->u.td.y_value);
 			}
 			ApplyTranslateMatrix(x_offset * state, y_offset * state, &matrix);
-			// ÒÆ»ØÈ¥
+			// ç§»å›å»
 			ApplyTranslateMatrix(-anchor_x, -anchor_y, &matrix);
 			ERR(in_data->utils->transform_world(
 				in_data->effect_ref,
@@ -804,7 +804,7 @@ Render(
 	return err;
 }
 
-// SmartRender Ô¤´¦Àí
+// SmartRender é¢„å¤„ç†
 
 static PF_Err
 PreRender(
@@ -813,6 +813,8 @@ PreRender(
 	PF_PreRenderExtra* extra)
 {
 	// extra->output->flags |= PF_RenderOutputFlag_GPU_RENDER_POSSIBLE;
+
+	extra->output->flags |= PF_RenderOutputFlag_RETURNS_EXTRA_PIXELS;
 
 	PF_Err err = PF_Err_NONE;
 	PF_RenderRequest req = extra->input->output_request;
@@ -843,10 +845,9 @@ PreRender(
 					&in_result));
 
 				if (!err) {
+					PF_Rect MaxPossibleArea = in_result.result_rect; // è®°å½•æœ€å¤§åŒºåŸŸï¼Œè¯¥åŒºåŸŸåœ¨åç»­å¤„ç†æ—¶ï¼Œå¦‚æœæœ‰åç§»åˆ™ä¼šæ‰©å¤§ 
+					
 					AEFX_CLR_STRUCT(*infoP);
-
-					UnionLRect(&in_result.result_rect, &extra->output->result_rect);
-					UnionLRect(&in_result.max_result_rect, &extra->output->max_result_rect);
 					
 					const A_long Lwidth = in_result.max_result_rect.right - in_result.max_result_rect.left,
 					             Lheight = in_result.max_result_rect.bottom - in_result.max_result_rect.top;
@@ -854,6 +855,7 @@ PreRender(
 					//// ???? LayerPack ??
 					LayerPack layerPack{
 						0,
+						{0,0, Lwidth, Lheight},
 						std::vector<LayerInfo>{}
 					};
 					// ?????????
@@ -999,7 +1001,7 @@ PreRender(
 					// 	findex = 0;
 					// }
 
-					// ÕÒµ½µ±Ç°Ê±¼ä¶ÔÓ¦µÄ×î´óÀÛ»ıÁ¿£¨¼´Àëµ±Ç°Ê±¼ä×î½üµÄ¹Ø¼üÖ¡µÄ real_index ¶ÔÓ¦Öµ£©
+					// æ‰¾åˆ°å½“å‰æ—¶é—´å¯¹åº”çš„æœ€å¤§ç´¯ç§¯é‡ï¼ˆå³ç¦»å½“å‰æ—¶é—´æœ€è¿‘çš„å…³é”®å¸§çš„ real_index å¯¹åº”å€¼ï¼‰
 					A_long max_real_index = -1;
 					for (int i = 0;i < keyframes;i++) {
 						A_long key_time = 0;
@@ -1030,7 +1032,7 @@ PreRender(
 
 
 					A_long storage_num = 0;
-					A_long real_index = -1; // ÕæÊµÀÛ¼ÆÁ¿
+					A_long real_index = -1; // çœŸå®ç´¯è®¡é‡
 					for (int i = 0;i < keyframes;i++) {
 						A_long key_time = 0;
 						A_u_long key_time_scale = 0;
@@ -1056,12 +1058,17 @@ PreRender(
 							&countDef));
 						const A_long count = countDef.u.fs_d.value;
 						for(int iy = 0; iy < count; iy++){
+
+							RectByPoints rectPoints; // è®°å½•è¯¥å±‚çš„å››ä¸ªé¡¶ç‚¹ä½ç½®
+							AEFX_CLR_STRUCT(rectPoints);
+							SetRectIntoRectByPoints(&in_result.result_rect, rectPoints);
+
 							real_index++;
-							// Èç¹ûÔÚ×î´óÀÛ»ıÁ¿Ö®Íâ£¬¾Í²»½øĞĞ´¦Àí
+							// å¦‚æœåœ¨æœ€å¤§ç´¯ç§¯é‡ä¹‹å¤–ï¼Œå°±ä¸è¿›è¡Œå¤„ç†
 							if (max_real_index - maxcountDef.u.fs_d.value >= real_index) {
 								continue;
 							}
-							// Èç¹ûµ±Ç°Ê±¼ä´óÓÚ»º´æÖµ£¬¾ÍÖ±½Ó½øÈëÏÂÒ»²ã
+							// å¦‚æœå½“å‰æ—¶é—´å¤§äºç¼“å­˜å€¼ï¼Œå°±ç›´æ¥è¿›å…¥ä¸‹ä¸€å±‚
 							if (key_time_scale != 0) {
 								const PF_FpLong time = (ctime - key_time) / (double)key_time_scale;
 								const PF_FpLong max_cache = maxdurDef.u.fs_d.value;
@@ -1253,8 +1260,8 @@ PreRender(
 							if (isfrozenDef.u.bd.value) {
 								check_time = key_time;
 							}
-							//// ½ÓÏÂÀ´½øĞĞ¾ØÕóµÄ±ä»»£¬Ë³ĞòÊÇËõ·Å -> Ğı×ª -> Î»ÒÆ
-							//// ÀÛ»ıËõ·Å²¿·Ö
+							//// æ¥ä¸‹æ¥è¿›è¡ŒçŸ©é˜µçš„å˜æ¢ï¼Œé¡ºåºæ˜¯ç¼©æ”¾ -> æ—‹è½¬ -> ä½ç§»
+							//// ç´¯ç§¯ç¼©æ”¾éƒ¨åˆ†
 							PF_FpLong single_scale_size = 1;
 							PF_ParamDef currentDef;
 							AEFX_CLR_STRUCT(currentDef);
@@ -1267,7 +1274,7 @@ PreRender(
 								&currentDef));
 							single_scale_size = currentDef.u.fs_d.value / 100;
 							ApplyScaleMatrix(pow(single_scale_size, state), false, &matrix);
-							//// Ğı×ª²¿·Ö
+							//// æ—‹è½¬éƒ¨åˆ†
 							PF_FpLong angle = 0;
 							AEFX_CLR_STRUCT(currentDef);
 							ERR(PF_CHECKOUT_PARAM(
@@ -1279,9 +1286,9 @@ PreRender(
 								&currentDef));
 							angle = FIX_2_FLOAT(currentDef.u.ad.value) * state;
 							ApplyAngleMatrix(angle, &matrix);
-							// Ğı×ªËõ·Å
+							// æ—‹è½¬ç¼©æ”¾
 							ApplyScaleMatrix(rotatescaleDef.u.fs_d.value / 100, false, &matrix);
-							//// Î»ÒÆ²¿·Ö
+							//// ä½ç§»éƒ¨åˆ†
 							PF_FpLong x_offset = 0;
 							PF_FpLong y_offset = 0;
 							AEFX_CLR_STRUCT(currentDef);
@@ -1295,10 +1302,16 @@ PreRender(
 							x_offset = FIX_2_FLOAT(currentDef.u.td.x_value) * state;
 							y_offset = FIX_2_FLOAT(currentDef.u.td.y_value) * state;
 							ApplyTranslateMatrix(x_offset, y_offset, &matrix);
-							// ÒÆ»ØÈ¥
+							// ç§»å›å»
 							ApplyTranslateMatrix(-anchor_x, -anchor_y, &matrix);
 
 							storageInfo.matrix = matrix;
+
+							MultiMatrixForRectByPoints(&matrix, rectPoints);
+							PF_Rect max_rect;
+							AEFX_CLR_STRUCT(max_rect);
+							GetMaxRectWithRectByPoints(rectPoints, &max_rect);
+							UnionLRect(&max_rect, &MaxPossibleArea);
 
 							layerPack.pack.push_back(storageInfo);
 						}
@@ -1306,6 +1319,14 @@ PreRender(
 					// suites.HandleSuite1()->host_resize_handle(sizeof(layerPack),&infoH);
 					infoP->xfer = layerPack.xfer;
 					infoP->pack = layerPack.pack;
+					infoP->MaxRect = MaxPossibleArea;
+
+					PF_FpLong ori_x, ori_y;
+
+					UnionLRect(&in_result.result_rect, &extra->output->result_rect);
+					UnionLRect(&MaxPossibleArea, &extra->output->result_rect);
+					UnionLRect(&in_result.max_result_rect, &extra->output->max_result_rect);
+					UnionLRect(&MaxPossibleArea, &extra->output->max_result_rect);
 				}
 			}
 
@@ -1358,6 +1379,16 @@ SmartRenderCPU(
 			for (LayerInfo& layer : infoP->pack) {
 				ERR((extra->cb->checkout_layer_pixels(in_data->effect_ref, layer.idL, &middle_worldP)));
 
+				// å¦‚æœ &infoP->MaxRect å­˜åœ¨è´Ÿåæ ‡ï¼Œç”±äºæœ€å·¦ä¸Šè§’åŸç‚¹ä½ç½®æ”¹å˜äº†ï¼Œmatrix ä¹Ÿéœ€è¦ç›¸åº”æ”¹å˜
+				if (infoP->MaxRect.left < 0) {
+					layer.matrix.mat[2][0] += -infoP->MaxRect.left;
+					infoP->MaxRect.right += -infoP->MaxRect.left;
+				}
+				if (infoP->MaxRect.top < 0) {
+					layer.matrix.mat[2][1] += -infoP->MaxRect.top;
+					infoP->MaxRect.bottom += -infoP->MaxRect.top;
+				}
+
 				ERR(in_data->utils->transform_world(
 					in_data->effect_ref,
 					in_data->quality,
@@ -1369,7 +1400,7 @@ SmartRenderCPU(
 					&layer.matrix,
 					1,
 					true,
-					&middle_worldP->extent_hint,
+					&infoP->MaxRect,
 					output_worldP)
 				);
 			}
@@ -1400,7 +1431,7 @@ SmartRender(
 	PF_Err				err = PF_Err_NONE,
 		err2 = PF_Err_NONE;
 
-	//// ºÜ±§Ç¸£¬ÊµÏÖGPUÈ·ÊµÌ«Âé·³ÁË£¬ËùÒÔÃ»ÓĞÁË¡£¡£¡£
+	//// å¾ˆæŠ±æ­‰ï¼Œå®ç°GPUç¡®å®å¤ªéº»çƒ¦äº†ï¼Œæ‰€ä»¥æ²¡æœ‰äº†ã€‚ã€‚ã€‚
 	// if(use_gpu){
 	// 	ERR(SmartRenderGPU(
 	// 		in_data,
@@ -1493,7 +1524,7 @@ EffectMain(
 				err = SmartRender(in_data, out_data, (PF_SmartRenderExtra*)extra, false);
 				break;
 
-			//// ºÜ±§Ç¸£¬ÊµÏÖGPUÈ·ÊµÌ«Âé·³ÁË£¬ËùÒÔÃ»ÓĞÁË¡£¡£¡£
+			//// å¾ˆæŠ±æ­‰ï¼Œå®ç°GPUç¡®å®å¤ªéº»çƒ¦äº†ï¼Œæ‰€ä»¥æ²¡æœ‰äº†ã€‚ã€‚ã€‚
 			// case PF_Cmd_GPU_DEVICE_SETUP:
 			// 	err = GPUDeviceSetup(in_data, out_data, (PF_GPUDeviceSetupExtra *)extra);
 			// 	break;

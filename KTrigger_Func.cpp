@@ -22,6 +22,9 @@ static void PrintMatrix(PF_FloatMatrix& matrix);
 // 	}
 // }
 
+#define max(a,b) ((a)>(b)?(a):(b))
+#define min(a,b) ((a)<(b)?(a):(b))
+
 static void MultiMatrix(const PF_FloatMatrix* apply_matrix, PF_FloatMatrix* transform_matrix) {
     PF_FloatMatrix temp_matrix = *transform_matrix; // 直接拷贝整个结构体
     
@@ -182,4 +185,44 @@ static void PrintMatrix(PF_FloatMatrix& matrix) {
 	// 	OutputDebugStringA("\n");
 	// }
 	// OutputDebugStringA("\n");
+}
+
+static void SetRectIntoRectByPoints(PF_Rect* rect, RectByPoints& points) {
+    points.topLeft = { rect->left, rect->top };
+    points.topRight = { rect->right, rect->top };
+    points.bottomLeft = { rect->left, rect->bottom };
+    points.bottomRight = { rect->right, rect->bottom };
+}
+
+static void MultiMatrixForRectByPoints(const PF_FloatMatrix* matrix, RectByPoints& points) {
+    // 把 RectByPoints 的四个点进行矩阵变换
+    PF_Point temp;
+
+    // Transform topLeft
+    temp.x = static_cast<A_long>(matrix->mat[0][0] * points.topLeft.x + matrix->mat[1][0] * points.topLeft.y + matrix->mat[2][0]);
+    temp.y = static_cast<A_long>(matrix->mat[0][1] * points.topLeft.x + matrix->mat[1][1] * points.topLeft.y + matrix->mat[2][1]);
+    points.topLeft = temp;
+
+    // Transform topRight
+    temp.x = static_cast<A_long>(matrix->mat[0][0] * points.topRight.x + matrix->mat[1][0] * points.topRight.y + matrix->mat[2][0]);
+    temp.y = static_cast<A_long>(matrix->mat[0][1] * points.topRight.x + matrix->mat[1][1] * points.topRight.y + matrix->mat[2][1]);
+    points.topRight = temp;
+
+    // Transform bottomLeft
+    temp.x = static_cast<A_long>(matrix->mat[0][0] * points.bottomLeft.x + matrix->mat[1][0] * points.bottomLeft.y + matrix->mat[2][0]);
+    temp.y = static_cast<A_long>(matrix->mat[0][1] * points.bottomLeft.x + matrix->mat[1][1] * points.bottomLeft.y + matrix->mat[2][1]);
+    points.bottomLeft = temp;
+
+    // Transform bottomRight
+    temp.x = static_cast<A_long>(matrix->mat[0][0] * points.bottomRight.x + matrix->mat[1][0] * points.bottomRight.y + matrix->mat[2][0]);
+    temp.y = static_cast<A_long>(matrix->mat[0][1] * points.bottomRight.x + matrix->mat[1][1] * points.bottomRight.y + matrix->mat[2][1]);
+    points.bottomRight = temp;
+}
+
+static void GetMaxRectWithRectByPoints(const RectByPoints& points, PF_Rect* out_rect) {
+    // 根据 RectByPoints 的四个点计算出包含它们的最大矩形，不要用 std
+    out_rect->left = min(min(points.topLeft.x, points.bottomLeft.x), min(points.topRight.x, points.bottomRight.x));
+    out_rect->top = min(min(points.topLeft.y, points.topRight.y), min(points.bottomLeft.y, points.bottomRight.y));
+    out_rect->right = max(max(points.topLeft.x, points.bottomLeft.x), max(points.topRight.x, points.bottomRight.x));
+    out_rect->bottom = max(max(points.topLeft.y, points.topRight.y), max(points.bottomLeft.y, points.bottomRight.y));
 }

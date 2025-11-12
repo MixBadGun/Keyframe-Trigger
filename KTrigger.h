@@ -67,7 +67,7 @@ typedef short int			int16;
 
 #define	PLUGIN_MAJOR_VERSION	2
 #define	PLUGIN_MINOR_VERSION	5
-#define	PLUGIN_BUG_VERSION		0
+#define	PLUGIN_BUG_VERSION		2
 #define	PLUGIN_STAGE_VERSION	PF_Stage_RELEASE
 #define	PLUGIN_BUILD_VERSION	1
 
@@ -163,8 +163,16 @@ typedef struct LayerInfo {
 
 typedef struct LayerPack {
 	A_long     xfer;
+	PF_Rect    MaxRect;
 	std::vector<LayerInfo> pack;
 } LayerPack;
+
+typedef struct RectByPoints {
+	PF_Point topLeft;
+	PF_Point topRight;
+	PF_Point bottomLeft;
+	PF_Point bottomRight;
+};
 
 extern "C" {
 
