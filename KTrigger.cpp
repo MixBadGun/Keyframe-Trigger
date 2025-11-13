@@ -71,7 +71,8 @@ GlobalSetup (
 										PLUGIN_BUILD_VERSION);
 
 	out_data->out_flags |=	PF_OutFlag_NON_PARAM_VARY |
-							PF_OutFlag_DEEP_COLOR_AWARE;
+							PF_OutFlag_DEEP_COLOR_AWARE |
+							PF_OutFlag_I_EXPAND_BUFFER;
 
 	out_data->out_flags2 |= PF_OutFlag2_SUPPORTS_THREADED_RENDERING |
 							PF_OutFlag2_SUPPORTS_SMART_RENDER |
@@ -410,76 +411,114 @@ int GetXferMode(int strNum)
 	return XferModes[strNum - 1].mode;
 }
 
-static PF_Err 
-Render(
+// 计算 LayerPack 信息
+static PF_Err
+CalcLayerPack(
 	PF_InData* in_data,
 	PF_OutData* out_data,
-	PF_ParamDef* params[],
-	PF_LayerDef* output)
-{
-	PF_Err				err = PF_Err_NONE;
-	AEGP_SuiteHandler	suites(in_data->pica_basicP);
+	PF_Rect in_rect,
+	PF_Rect *MaxPossibleArea,
+	AEGP_SuiteHandler &suites,
+	LayerPack* layerPack,
+	std::vector<CheckLayer> *checkLayers,
+	bool needCheckIn = false
+){
+	PF_Err err = PF_Err_NONE;
 
-	GainInfo			giP;
-	AEFX_CLR_STRUCT(giP);
-
-	PF_Boolean			deepB = PF_WORLD_IS_DEEP(output);
-	PF_NewWorldFlags	flags = PF_NewWorldFlag_CLEAR_PIXELS;
-	if (deepB) {
-		flags |= PF_NewWorldFlag_DEEP_PIXELS;
-	}
-
-	const PF_Pixel transparent_black = { 0, 0, 0, 0 };
-	ERR(PF_FILL(&transparent_black, &output->extent_hint, output));
-	PF_CompositeMode composite_mode;
-	AEFX_CLR_STRUCT(composite_mode);
-	composite_mode.opacity = 255;
-	composite_mode.xfer = GetXferMode(params[XFER_MODE_DISK_ID]->u.pd.value);
-
+	// ?????????
 	const A_long ctime = in_data->current_time;
+
+	// ???????
+	PF_ParamDef isflipDef, isfrozenDef, maxdurDef, offsetcountDef, isconDef,
+		returnDef, return2Def, rotatescaleDef, xferDef, anchorDef, countDef, maxcountDef;
+	AEFX_CLR_STRUCT(isflipDef);
+	AEFX_CLR_STRUCT(isfrozenDef);
+	AEFX_CLR_STRUCT(maxdurDef);
+	AEFX_CLR_STRUCT(offsetcountDef);
+	AEFX_CLR_STRUCT(returnDef);
+	AEFX_CLR_STRUCT(return2Def);
+	// AEFX_CLR_STRUCT(switchDef);
+	AEFX_CLR_STRUCT(rotatescaleDef);
+	AEFX_CLR_STRUCT(xferDef);
+	AEFX_CLR_STRUCT(anchorDef);
+	AEFX_CLR_STRUCT(countDef);
+	AEFX_CLR_STRUCT(maxcountDef);
+	ERR(PF_CHECKOUT_PARAM(in_data,
+		IS_FLIP_DISK_ID,
+		ctime,
+		in_data->time_step,
+		in_data->time_scale,
+		&isflipDef));
+	ERR(PF_CHECKOUT_PARAM(in_data,
+		IS_FROZEN_DISK_ID,
+		ctime,
+		in_data->time_step,
+		in_data->time_scale,
+		&isfrozenDef));
+	ERR(PF_CHECKOUT_PARAM(in_data,
+		MAX_DUR_DISK_ID,
+		ctime,
+		in_data->time_step,
+		in_data->time_scale,
+		&maxdurDef));
+	ERR(PF_CHECKOUT_PARAM(in_data,
+		OFFSET_COUNT_DISK_ID,
+		ctime,
+		in_data->time_step,
+		in_data->time_scale,
+		&offsetcountDef));
+	ERR(PF_CHECKOUT_PARAM(in_data,
+		IS_CONTROL_DISK_ID,
+		ctime,
+		in_data->time_step,
+		in_data->time_scale,
+		&isconDef));
+	ERR(PF_CHECKOUT_PARAM(in_data,
+		RETURN_DISK_ID,
+		ctime,
+		in_data->time_step,
+		in_data->time_scale,
+		&returnDef));
+	ERR(PF_CHECKOUT_PARAM(in_data,
+		RETURN2_DISK_ID,
+		ctime,
+		in_data->time_step,
+		in_data->time_scale,
+		&return2Def));
+	ERR(PF_CHECKOUT_PARAM(in_data,
+		ROTATE_SCALE_DISK_ID,
+		ctime,
+		in_data->time_step,
+		in_data->time_scale,
+		&rotatescaleDef));
+	ERR(PF_CHECKOUT_PARAM(in_data,
+		XFER_MODE_DISK_ID,
+		ctime,
+		in_data->time_step,
+		in_data->time_scale,
+		&xferDef));
+	ERR(PF_CHECKOUT_PARAM(in_data,
+		ANCHOR_DISK_ID,
+		ctime,
+		in_data->time_step,
+		in_data->time_scale,
+		&anchorDef));
+	ERR(PF_CHECKOUT_PARAM(in_data,
+		MAX_COUNT_DISK_ID,
+		ctime,
+		in_data->time_step,
+		in_data->time_scale,
+		&maxcountDef));
+
+	PF_FpLong anchor_x = FIX_2_FLOAT(anchorDef.u.td.x_value);
+	PF_FpLong anchor_y = FIX_2_FLOAT(anchorDef.u.td.y_value);
+
+	layerPack->xfer = xferDef.u.pd.value;
 
 	A_long keyframes = 0;
 	ERR(suites.ParamUtilsSuite3()->PF_GetKeyframeCount(in_data->effect_ref,
 		SKELETON_GAIN,
 		&keyframes));
-
-	PF_KeyIndex findex = 0;
-	PF_Boolean fhasKey = false;
-	A_long fkey_time = 0;
-	A_u_long fkey_time_scale = 0;
-	ERR(suites.ParamUtilsSuite3()->PF_FindKeyframeTime(in_data->effect_ref,
-		SKELETON_GAIN,
-		ctime,
-		in_data->time_scale,
-		PF_TimeDir_LESS_THAN_OR_EQUAL,
-		&fhasKey,
-		&findex,
-		&fkey_time,
-		&fkey_time_scale
-	));
-	// if(fhasKey){
-	// 	PF_FpLong ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
-	// 	const PF_FpLong fmax_cache = params[MAX_DUR_DISK_ID]->u.fs_d.value;
-	// 	while(ftime < fmax_cache){
-	// 		if (!(findex > 0)) {
-	// 			break;
-	// 		}
-	// 		findex -= 1;
-	// 		ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
-	// 			in_data->effect_ref,
-	// 			SKELETON_GAIN,
-	// 			findex,
-	// 			&fkey_time,
-	// 			&fkey_time_scale));
-	// 		ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
-	// 	}
-	// }
-	// else {
-	// 	findex = 0;
-	// }
-
-	PF_FpLong anchor_x = FIX_2_FLOAT(params[ANCHOR_DISK_ID]->u.td.x_value);
-	PF_FpLong anchor_y = FIX_2_FLOAT(params[ANCHOR_DISK_ID]->u.td.y_value);
 
 	// 找到当前时间对应的最大累积量（即离当前时间最近的关键帧的 real_index 对应值）
 	A_long max_real_index = -1;
@@ -492,17 +531,13 @@ Render(
 			i,
 			&key_time,
 			&key_time_scale));
-
 		if (ctime < key_time) {
 			break;
 		}
-		if (ctime - key_time > in_data->total_time){
+		if (ctime - key_time > in_data->total_time) {
 			continue;
 		}
 
-		// 获取在当前时间下的数量值
-		PF_ParamDef countDef;
-		AEFX_CLR_STRUCT(countDef);
 		ERR(PF_CHECKOUT_PARAM(
 			in_data,
 			COUNT_DISK_ID,
@@ -511,13 +546,15 @@ Render(
 			in_data->time_scale,
 			&countDef));
 		const A_long count = countDef.u.fs_d.value;
-		PF_CHECKIN_PARAM(in_data, &countDef);
-
 		max_real_index += count;
+		if(needCheckIn){
+			ERR(PF_CHECKIN_PARAM(in_data, &countDef));
+		}
 	}
 
-	A_long real_index = -1; // 真实累计量
 
+	A_long storage_num = 0;
+	A_long real_index = -1; // 真实累计量
 	for (int i = 0;i < keyframes;i++) {
 		A_long key_time = 0;
 		A_u_long key_time_scale = 0;
@@ -527,17 +564,13 @@ Render(
 			i,
 			&key_time,
 			&key_time_scale));
-
 		if (ctime < key_time) {
 			break;
 		}
-		if (ctime - key_time > in_data->total_time){
+		if (ctime - key_time > in_data->total_time) {
 			continue;
 		}
 
-		// 获取在当前时间下的数量值
-		PF_ParamDef countDef;
-		AEFX_CLR_STRUCT(countDef);
 		ERR(PF_CHECKOUT_PARAM(
 			in_data,
 			COUNT_DISK_ID,
@@ -546,36 +579,39 @@ Render(
 			in_data->time_scale,
 			&countDef));
 		const A_long count = countDef.u.fs_d.value;
-		PF_CHECKIN_PARAM(in_data, &countDef);
-
-		// 开始循环多次
-		for (int iy = 0; iy < count; iy++){
+		if(needCheckIn){
+			ERR(PF_CHECKIN_PARAM(in_data, &countDef));
+		}
+		for(int iy = 0; iy < count; iy++){
 			real_index++;
 			// 如果在最大累积量之外，就不进行处理
-			if (max_real_index - params[MAX_COUNT_DISK_ID]->u.fs_d.value >= real_index) {
+			if (max_real_index - maxcountDef.u.fs_d.value >= real_index) {
 				continue;
 			}
-			// 对于小于该时间缓存值的，直接进入下一层循环
+			// 如果当前时间大于缓存值，就直接进入下一层
 			if (key_time_scale != 0) {
-				const PF_FpLong time = (key_time - ctime) / (double)key_time_scale;
-				const PF_FpLong max_cache = params[MAX_DUR_DISK_ID]->u.fs_d.value;
+				const PF_FpLong time = (ctime - key_time) / (double)key_time_scale;
+				const PF_FpLong max_cache = maxdurDef.u.fs_d.value;
 				if (time > max_cache) {
 					continue;
 				}
 			}
-			// 从此刻开始计算
+
+			storage_num++;
+			LayerInfo storageInfo;
+			AEFX_CLR_STRUCT(storageInfo);
+			storageInfo.idL = storage_num;
+
 			PF_FloatMatrix matrix = { {
 				{1,0,0},
 				{0,1,0},
 				{0,0,1}
-				}
+				} 
 			};
 
 			ApplyTranslateMatrix(anchor_x, anchor_y, &matrix);
 
-			const A_long widthL = in_data->extent_hint.right - in_data->extent_hint.left;
-			const A_long heightL = in_data->extent_hint.bottom - in_data->extent_hint.top;
-
+			// ?????????
 			PF_ParamDef startTimeDef;
 			AEFX_CLR_STRUCT(startTimeDef);
 			ERR(PF_CHECKOUT_PARAM(
@@ -586,8 +622,9 @@ Render(
 				in_data->time_scale,
 				&startTimeDef));
 			A_long const start_key_time = startTimeDef.u.fs_d.value * key_time_scale;
-			PF_CHECKIN_PARAM(in_data, &startTimeDef);
-
+			if(needCheckIn){
+				ERR(PF_CHECKIN_PARAM(in_data, &startTimeDef));
+			}
 			PF_ParamDef playrateDef;
 			AEFX_CLR_STRUCT(playrateDef);
 			ERR(PF_CHECKOUT_PARAM(
@@ -598,8 +635,9 @@ Render(
 				in_data->time_scale,
 				&playrateDef));
 			PF_FpLong const playrate = playrateDef.u.fs_d.value;
-			PF_CHECKIN_PARAM(in_data, &playrateDef);
-
+			if(needCheckIn){
+				ERR(PF_CHECKIN_PARAM(in_data, &playrateDef));
+			}
 			PF_FpLong const pull_frame_time = (ctime - key_time) * playrate + start_key_time;
 			if (pull_frame_time < 0) {
 				continue;
@@ -630,24 +668,31 @@ Render(
 					}
 				}
 			}
-			if (is_now) {
+			if(needCheckIn){
 				ERR(PF_CHECKIN_PARAM(in_data, &imageDef));
-				// AEFX_CLR_STRUCT(imageDef);
-				ERR(PF_CHECKOUT_PARAM(
-					in_data,
-					PF_Param_LAYER,
-					pull_frame_time,
-					in_data->time_step,
-					in_data->time_scale,
-					&imageDef));
 			}
-			
+
+			if (is_now) {
+				// 暂时先不签出，只存入 layerInfos 中
+				checkLayers->push_back(CheckLayer{
+					PF_Param_LAYER,
+					storage_num,
+					pull_frame_time
+					});
+			} else {
+				checkLayers->push_back(CheckLayer{
+					SECOND_LAYER_DISK_ID,
+					storage_num,
+					pull_frame_time
+					});
+			}
+
 			A_Boolean is_flip = false;
-			if (params[IS_FLIP_DISK_ID]->u.bd.value && real_index % 2 == 1) {
+			if (isflipDef.u.bd.value && real_index % 2 == 1) {
 				is_flip = true;
 			}
 			PF_FpLong scale_size = 1;
-			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
+			if (isfrozenDef.u.bd.value) {
 				PF_ParamDef currentDef;
 				AEFX_CLR_STRUCT(currentDef);
 				ERR(PF_CHECKOUT_PARAM(
@@ -658,21 +703,35 @@ Render(
 					in_data->time_scale,
 					&currentDef));
 				scale_size = currentDef.u.fs_d.value / 100;
-				ERR(PF_CHECKIN_PARAM(
-					in_data, &currentDef));
-			} else {
-				scale_size = params[SCALE_SIZE_DISK_ID]->u.fs_d.value / 100;
+				if(needCheckIn){
+					ERR(PF_CHECKIN_PARAM(in_data, &currentDef));
+				}
+			}
+			else {
+				PF_ParamDef currentDef;
+				AEFX_CLR_STRUCT(currentDef);
+				ERR(PF_CHECKOUT_PARAM(
+					in_data,
+					SCALE_SIZE_DISK_ID,
+					ctime,
+					in_data->time_step,
+					in_data->time_scale,
+					&currentDef));
+				scale_size = currentDef.u.fs_d.value / 100;
+				if(needCheckIn){
+					ERR(PF_CHECKIN_PARAM(in_data, &currentDef));
+				}
 			}
 			ApplyScaleMatrix(
 				scale_size,
 				is_flip,
 				&matrix);
-			//else {
+			// else {
 			//	ERR(PF_COPY(&imageDef.u.ld, &cworld, NULL, NULL));
-			//}
+			// }
 			PF_FpLong state = 0;
-			const A_long offset_count = params[OFFSET_COUNT_DISK_ID]->u.fs_d.value;
-			if (params[IS_CONTROL_DISK_ID]->u.bd.value) {
+			const A_long offset_count = offsetcountDef.u.fs_d.value;
+			if (isconDef.u.bd.value) {
 				PF_ParamDef ckey;
 				AEFX_CLR_STRUCT(ckey);
 				ERR(suites.ParamUtilsSuite3()->PF_CheckoutKeyframe(in_data->effect_ref,
@@ -683,13 +742,13 @@ Render(
 					&ckey));
 				state = ckey.u.fs_d.value;
 				ERR(suites.ParamUtilsSuite3()->PF_CheckinKeyframe(
-						in_data->effect_ref,
-						&ckey));
+					in_data->effect_ref,
+					&ckey));
 			}
 			else {
 				if (offset_count > 0) {
-					if (params[RETURN_DISK_ID]->u.bd.value && offset_count > 1) {
-						if (params[RETURN2_DISK_ID]->u.bd.value) {
+					if (returnDef.u.bd.value) {
+						if (return2Def.u.bd.value) {
 							const int mid = real_index % (offset_count * 2 - 2);
 							if (mid < offset_count) {
 								state = mid;
@@ -697,7 +756,8 @@ Render(
 							else {
 								state = 2 * offset_count - 2 - mid;
 							}
-						} else {
+						}
+						else {
 							const int mid = real_index % (offset_count * 2);
 							if (mid < offset_count) {
 								state = mid;
@@ -714,91 +774,271 @@ Render(
 				else {
 					state = real_index;
 				}
+
+			}
+
+			A_long check_time = ctime;
+			if (isfrozenDef.u.bd.value) {
+				check_time = key_time;
 			}
 			//// 接下来进行矩阵的变换，顺序是缩放 -> 旋转 -> 位移
 			//// 累积缩放部分
 			PF_FpLong single_scale_size = 1;
-			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
-				PF_ParamDef currentDef;
-				AEFX_CLR_STRUCT(currentDef);
-				ERR(PF_CHECKOUT_PARAM(
-					in_data,
-					SINGLE_SCALE_DISK_ID,
-					key_time,
-					in_data->time_step,
-					in_data->time_scale,
-					&currentDef));
-				single_scale_size = currentDef.u.fs_d.value / 100;
-				ERR(PF_CHECKIN_PARAM(
-					in_data, &currentDef));
-			} else {
-				single_scale_size = params[SINGLE_SCALE_DISK_ID]->u.fs_d.value / 100;
+			PF_ParamDef currentDef;
+			AEFX_CLR_STRUCT(currentDef);
+			ERR(PF_CHECKOUT_PARAM(
+				in_data,
+				SINGLE_SCALE_DISK_ID,
+				check_time,
+				in_data->time_step,
+				in_data->time_scale,
+				&currentDef));
+			single_scale_size = currentDef.u.fs_d.value / 100;
+			if(needCheckIn){
+				ERR(PF_CHECKIN_PARAM(in_data, &currentDef));
 			}
 			ApplyScaleMatrix(pow(single_scale_size, state), false, &matrix);
 			//// 旋转部分
 			PF_FpLong angle = 0;
-			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
-				PF_ParamDef currentDef;
-				AEFX_CLR_STRUCT(currentDef);
-				ERR(PF_CHECKOUT_PARAM(
-					in_data,
-					ROTATE_DISK_ID,
-					key_time,
-					in_data->time_step,
-					in_data->time_scale,
-					&currentDef));
-				angle = FIX_2_FLOAT(currentDef.u.ad.value) * state;
-				ERR(PF_CHECKIN_PARAM(
-					in_data, &currentDef
-				));
-			}
-			else {
-				angle = FIX_2_FLOAT(params[ROTATE_DISK_ID]->u.ad.value) * state;
+			AEFX_CLR_STRUCT(currentDef);
+			ERR(PF_CHECKOUT_PARAM(
+				in_data,
+				ROTATE_DISK_ID,
+				check_time,
+				in_data->time_step,
+				in_data->time_scale,
+				&currentDef));
+			angle = FIX_2_FLOAT(currentDef.u.ad.value) * state;
+			if(needCheckIn){
+				ERR(PF_CHECKIN_PARAM(in_data, &currentDef));
 			}
 			ApplyAngleMatrix(angle, &matrix);
 			// 旋转缩放
-			ApplyScaleMatrix(params[ROTATE_SCALE_DISK_ID]->u.fs_d.value / 100, false, &matrix);
+			ApplyScaleMatrix(rotatescaleDef.u.fs_d.value / 100, false, &matrix);
 			//// 位移部分
 			PF_FpLong x_offset = 0;
 			PF_FpLong y_offset = 0;
-			if (params[IS_FROZEN_DISK_ID]->u.bd.value) {
-				PF_ParamDef currentDef;
-				AEFX_CLR_STRUCT(currentDef);
-				ERR(PF_CHECKOUT_PARAM(
-					in_data,
-					OFFSET_DISK_ID,
-					key_time,
-					in_data->time_step,
-					in_data->time_scale,
-					&currentDef));
-				x_offset = FIX_2_FLOAT(currentDef.u.td.x_value);
-				y_offset = FIX_2_FLOAT(currentDef.u.td.y_value);
-				ERR(PF_CHECKIN_PARAM(
-					in_data, &currentDef
-				));
+			AEFX_CLR_STRUCT(currentDef);
+			ERR(PF_CHECKOUT_PARAM(
+				in_data,
+				OFFSET_DISK_ID,
+				check_time,
+				in_data->time_step,
+				in_data->time_scale,
+				&currentDef));
+			x_offset = FIX_2_FLOAT(currentDef.u.td.x_value) * state;
+			y_offset = FIX_2_FLOAT(currentDef.u.td.y_value) * state;
+			if(needCheckIn){
+				ERR(PF_CHECKIN_PARAM(in_data, &currentDef));
 			}
-			else {
-				x_offset = FIX_2_FLOAT(params[OFFSET_DISK_ID]->u.td.x_value);
-				y_offset = FIX_2_FLOAT(params[OFFSET_DISK_ID]->u.td.y_value);
-			}
-			ApplyTranslateMatrix(x_offset * state, y_offset * state, &matrix);
+			ApplyTranslateMatrix(x_offset, y_offset, &matrix);
 			// 移回去
 			ApplyTranslateMatrix(-anchor_x, -anchor_y, &matrix);
-			ERR(in_data->utils->transform_world(
-				in_data->effect_ref,
-				in_data->quality,
-				in_data->in_flags,
-				in_data->field,
-				&imageDef.u.ld,
-				&composite_mode,
-				NULL,
-				&matrix,
-				1,
-				true,
-				&in_data->extent_hint,
-				output));
-			ERR(PF_CHECKIN_PARAM(in_data, &imageDef));
+
+			storageInfo.matrix = matrix;
+
+			RectByPoints rectPoints; // 记录该层的四个顶点位置
+			PF_Rect max_rect;
+			AEFX_CLR_STRUCT(rectPoints);
+			AEFX_CLR_STRUCT(max_rect);
+			SetRectIntoRectByPoints(&in_rect, rectPoints);
+			MultiMatrixForRectByPoints(&matrix, rectPoints);
+			GetMaxRectWithRectByPoints(rectPoints, &max_rect);
+			UnionLRect(&max_rect, MaxPossibleArea);
+
+			layerPack->pack.push_back(storageInfo);
 		}
+	}
+	
+	if (needCheckIn) {
+		ERR(PF_CHECKIN_PARAM(in_data, &isflipDef));
+		ERR(PF_CHECKIN_PARAM(in_data, &isfrozenDef));
+		ERR(PF_CHECKIN_PARAM(in_data, &maxdurDef));
+		ERR(PF_CHECKIN_PARAM(in_data, &offsetcountDef));
+		ERR(PF_CHECKIN_PARAM(in_data, &isconDef));
+		ERR(PF_CHECKIN_PARAM(in_data, &returnDef));
+		ERR(PF_CHECKIN_PARAM(in_data, &return2Def));
+		ERR(PF_CHECKIN_PARAM(in_data, &rotatescaleDef));
+		ERR(PF_CHECKIN_PARAM(in_data, &xferDef));
+		ERR(PF_CHECKIN_PARAM(in_data, &anchorDef));
+		ERR(PF_CHECKIN_PARAM(in_data, &maxcountDef));	
+	}
+	return err;
+}
+
+static PF_Err
+FrameSetup(
+	PF_InData* in_data,
+	PF_OutData* out_data,
+	PF_ParamDef* params[],
+	PF_LayerDef* output
+)
+{
+	PF_Err err = PF_Err_NONE;
+	AEGP_SuiteHandler suites(in_data->pica_basicP);
+
+	PF_Handle	infoH = suites.HandleSuite1()->host_new_handle(sizeof(CombinedLayerPack));
+
+	if (infoH) {
+
+		CombinedLayerPack* infoP = reinterpret_cast<CombinedLayerPack*>(suites.HandleSuite1()->host_lock_handle(infoH));
+
+		AEFX_CLR_STRUCT(*infoP);
+
+		if (infoP) {
+			out_data->frame_data = infoH;
+			if (!err) {
+				if (!err) {
+					PF_Rect MaxPossibleArea = {0,0,0,0}; // 记录最大区域，该区域在后续处理时，如果有偏移则会扩大 
+					std::vector<CheckLayer> checkLayers;
+					//// 计算 LayerPack 信息
+	
+					// 初始化 LayerPack
+					LayerPack layerPack{
+						0,
+						{0,0,0,0},
+						std::vector<LayerInfo>{}
+					};
+					AEFX_CLR_STRUCT(layerPack);
+
+					PF_FpLong downSampleScaleX = static_cast<PF_FpLong>(in_data->downsample_x.num) / in_data->downsample_x.den;
+					PF_FpLong downSampleScaleY = static_cast<PF_FpLong>(in_data->downsample_y.num) / in_data->downsample_y.den;
+
+					PF_Rect in_rect = {0, 0,
+						static_cast<A_long>(in_data->width * downSampleScaleX),
+						static_cast<A_long>(in_data->height * downSampleScaleY)
+					};
+
+					ERR(CalcLayerPack(
+						in_data,
+						out_data,
+						in_rect,
+						&MaxPossibleArea,
+						suites,
+						&layerPack,
+						&checkLayers,
+						true
+					));
+					
+					// 将 layerInfo 的值先改为 combinedLayerInfo，再存入 infoP 中
+					for(const LayerInfo& layer : layerPack.pack){
+						for(const CheckLayer& checkLayer : checkLayers){
+							if(layer.idL == checkLayer.storageId){
+								CombinedLayerInfo combinedLayerInfo;
+								AEFX_CLR_STRUCT(combinedLayerInfo);
+								combinedLayerInfo.matrix = layer.matrix;
+								combinedLayerInfo.keyTime = checkLayer.keyTime;
+								combinedLayerInfo.LayerSource = checkLayer.LayerSource;
+								infoP->pack.push_back(combinedLayerInfo);
+								break;
+							}
+						}
+					}
+
+					PF_LayerDef *input_layer = &params[SKELETON_INPUT]->u.ld;
+					UnionLRect(&input_layer->extent_hint, &MaxPossibleArea);
+					infoP->MaxRect = MaxPossibleArea;
+					infoP->xfer = layerPack.xfer;
+
+					// PF_FpLong downSampleScaleX = static_cast<PF_FpLong>(in_data->downsample_x.num) / in_data->downsample_x.den;
+					// PF_FpLong downSampleScaleY = static_cast<PF_FpLong>(in_data->downsample_y.num) / in_data->downsample_y.den;
+
+					out_data->width = static_cast<A_long>((MaxPossibleArea.right - MaxPossibleArea.left));
+					out_data->height = static_cast<A_long>((MaxPossibleArea.bottom - MaxPossibleArea.top));
+					if(MaxPossibleArea.left < 0){
+						out_data->origin.h = -MaxPossibleArea.left;
+					}
+					if(MaxPossibleArea.top < 0){
+						out_data->origin.v = -MaxPossibleArea.top;
+					}
+				}
+			}
+
+			suites.HandleSuite1()->host_unlock_handle(infoH);
+		}
+		else {
+			err = PF_Err_OUT_OF_MEMORY;
+		}
+	}
+	else {
+		err = PF_Err_OUT_OF_MEMORY;
+	}
+	return err;
+}
+
+static PF_Err 
+Render(
+	PF_InData* in_data,
+	PF_OutData* out_data,
+	PF_ParamDef* params[],
+	PF_LayerDef* output)
+{
+	PF_Err				err = PF_Err_NONE;
+	AEGP_SuiteHandler	suites(in_data->pica_basicP);
+
+	PF_Boolean			deepB = PF_WORLD_IS_DEEP(output);
+	PF_NewWorldFlags	flags = PF_NewWorldFlag_CLEAR_PIXELS;
+	if (deepB) {
+		flags |= PF_NewWorldFlag_DEEP_PIXELS;
+	}
+
+	CombinedLayerPack* infoP = reinterpret_cast<CombinedLayerPack*>(suites.HandleSuite1()->host_lock_handle(reinterpret_cast<PF_Handle>(out_data->frame_data)));
+
+	// 由于最左上角原点位置改变了，Rect 也需要相应改变
+	A_long offset_left, offset_top = 0;
+	if(infoP->MaxRect.left < 0){
+		offset_left = infoP->MaxRect.left;
+		infoP->MaxRect.right += -infoP->MaxRect.left;
+		infoP->MaxRect.left += -infoP->MaxRect.left;
+	}
+	if(infoP->MaxRect.top < 0){
+		offset_top = infoP->MaxRect.top;
+		infoP->MaxRect.bottom += -infoP->MaxRect.top;
+		infoP->MaxRect.top += -infoP->MaxRect.top;
+	}
+
+	const PF_Pixel transparent_black = { 0, 0, 0, 0 };
+	ERR(PF_FILL(&transparent_black, &infoP->MaxRect, output));
+	PF_CompositeMode composite_mode;
+	AEFX_CLR_STRUCT(composite_mode);
+	composite_mode.opacity = 255;
+	composite_mode.xfer = GetXferMode(params[XFER_MODE_DISK_ID]->u.pd.value);
+
+	if (infoP) {
+		for (CombinedLayerInfo& layer : infoP->pack) {
+			PF_ParamDef layerDef;
+			AEFX_CLR_STRUCT(layerDef);
+			ERR(PF_CHECKOUT_PARAM(
+				in_data,
+				layer.LayerSource,
+				layer.keyTime,
+				in_data->time_step,
+				in_data->time_scale,
+				&layerDef));
+
+			// 由于最左上角原点位置改变了，matrix 也需要相应改变
+			layer.matrix.mat[2][0] += static_cast<PF_FpLong>(-offset_left);
+			layer.matrix.mat[2][1] += static_cast<PF_FpLong>(-offset_top);
+			ERR(in_data->utils->transform_world(
+					in_data->effect_ref,
+					in_data->quality,
+					in_data->in_flags,
+					in_data->field,
+					&layerDef.u.ld,
+					&composite_mode,
+					NULL,
+					&layer.matrix,
+					1,
+					true,
+					&infoP->MaxRect,
+					output));
+			ERR(PF_CHECKIN_PARAM(in_data, &layerDef));
+		}
+
+		suites.HandleSuite1()->host_unlock_handle(reinterpret_cast<PF_Handle>(out_data->frame_data));
+	}
+	else {
+		err = PF_Err_OUT_OF_MEMORY;
 	}
 
 	return err;
@@ -828,6 +1068,8 @@ PreRender(
 
 		LayerPack* infoP = reinterpret_cast<LayerPack*>(suites.HandleSuite1()->host_lock_handle(infoH));
 
+		AEFX_CLR_STRUCT(*infoP);
+
 		if (infoP) {
 			extra->output->pre_render_data = infoH;
 
@@ -846,483 +1088,44 @@ PreRender(
 
 				if (!err) {
 					PF_Rect MaxPossibleArea = in_result.result_rect; // 记录最大区域，该区域在后续处理时，如果有偏移则会扩大 
-					
-					AEFX_CLR_STRUCT(*infoP);
-					
-					const A_long Lwidth = in_result.max_result_rect.right - in_result.max_result_rect.left,
-					             Lheight = in_result.max_result_rect.bottom - in_result.max_result_rect.top;
-
-					//// ???? LayerPack ??
+					std::vector<CheckLayer> checkLayers;
+					//// 计算 LayerPack 信息
+	
+					// 初始化 LayerPack
 					LayerPack layerPack{
 						0,
-						{0,0, Lwidth, Lheight},
+						{0,0,0,0},
 						std::vector<LayerInfo>{}
 					};
-					// ?????????
-					const A_long ctime = in_data->current_time;
+					AEFX_CLR_STRUCT(layerPack);
 
-					// ???????
-					PF_ParamDef isflipDef, isfrozenDef, maxdurDef, offsetcountDef, isconDef,
-						returnDef, return2Def, rotatescaleDef, xferDef, anchorDef, countDef, maxcountDef;
-					AEFX_CLR_STRUCT(isflipDef);
-					AEFX_CLR_STRUCT(isfrozenDef);
-					AEFX_CLR_STRUCT(maxdurDef);
-					AEFX_CLR_STRUCT(offsetcountDef);
-					AEFX_CLR_STRUCT(returnDef);
-					AEFX_CLR_STRUCT(return2Def);
-					// AEFX_CLR_STRUCT(switchDef);
-					AEFX_CLR_STRUCT(rotatescaleDef);
-					AEFX_CLR_STRUCT(xferDef);
-					AEFX_CLR_STRUCT(anchorDef);
-					AEFX_CLR_STRUCT(countDef);
-					AEFX_CLR_STRUCT(maxcountDef);
-					ERR(PF_CHECKOUT_PARAM(in_data,
-						IS_FLIP_DISK_ID,
-						ctime,
-						in_data->time_step,
-						in_data->time_scale,
-						&isflipDef));
-					ERR(PF_CHECKOUT_PARAM(in_data,
-						IS_FROZEN_DISK_ID,
-						ctime,
-						in_data->time_step,
-						in_data->time_scale,
-						&isfrozenDef));
-					ERR(PF_CHECKOUT_PARAM(in_data,
-						MAX_DUR_DISK_ID,
-						ctime,
-						in_data->time_step,
-						in_data->time_scale,
-						&maxdurDef));
-					ERR(PF_CHECKOUT_PARAM(in_data,
-						OFFSET_COUNT_DISK_ID,
-						ctime,
-						in_data->time_step,
-						in_data->time_scale,
-						&offsetcountDef));
-					ERR(PF_CHECKOUT_PARAM(in_data,
-						IS_CONTROL_DISK_ID,
-						ctime,
-						in_data->time_step,
-						in_data->time_scale,
-						&isconDef));
-					ERR(PF_CHECKOUT_PARAM(in_data,
-						RETURN_DISK_ID,
-						ctime,
-						in_data->time_step,
-						in_data->time_scale,
-						&returnDef));
-					ERR(PF_CHECKOUT_PARAM(in_data,
-						RETURN2_DISK_ID,
-						ctime,
-						in_data->time_step,
-						in_data->time_scale,
-						&return2Def));
-					// ERR(PF_CHECKOUT_PARAM(in_data,
-					// 	SWITCH_DISK_ID,
-					// 	ctime,
-					// 	in_data->time_step,
-					// 	in_data->time_scale,
-					// 	&switchDef));
-					ERR(PF_CHECKOUT_PARAM(in_data,
-						ROTATE_SCALE_DISK_ID,
-						ctime,
-						in_data->time_step,
-						in_data->time_scale,
-						&rotatescaleDef));
-					ERR(PF_CHECKOUT_PARAM(in_data,
-						XFER_MODE_DISK_ID,
-						ctime,
-						in_data->time_step,
-						in_data->time_scale,
-						&xferDef));
-					ERR(PF_CHECKOUT_PARAM(in_data,
-						ANCHOR_DISK_ID,
-						ctime,
-						in_data->time_step,
-						in_data->time_scale,
-						&anchorDef));
-					ERR(PF_CHECKOUT_PARAM(in_data,
-						MAX_COUNT_DISK_ID,
-						ctime,
-						in_data->time_step,
-						in_data->time_scale,
-						&maxcountDef));
+					PF_Rect in_rect = in_result.result_rect;
 
-					PF_FpLong anchor_x = FIX_2_FLOAT(anchorDef.u.td.x_value);
-					PF_FpLong anchor_y = FIX_2_FLOAT(anchorDef.u.td.y_value);
-
-					layerPack.xfer = xferDef.u.pd.value;
-
-					A_long keyframes = 0;
-					ERR(suites.ParamUtilsSuite3()->PF_GetKeyframeCount(in_data->effect_ref,
-						SKELETON_GAIN,
-						&keyframes));
-					// PF_KeyIndex findex = 0;
-					// PF_Boolean fhasKey = false;
-					// A_long fkey_time = 0;
-					// A_u_long fkey_time_scale = 0;
-					// ERR(suites.ParamUtilsSuite3()->PF_FindKeyframeTime(in_data->effect_ref,
-					// 	SKELETON_GAIN,
-					// 	ctime,
-					// 	in_data->time_scale,
-					// 	PF_TimeDir_LESS_THAN_OR_EQUAL,
-					// 	&fhasKey,
-					// 	&findex,
-					// 	&fkey_time,
-					// 	&fkey_time_scale
-					// ));
-					// if (fhasKey) {
-					// 	PF_FpLong ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
-					// 	PF_ParamDef tempDef;
-					// 	AEFX_CLR_STRUCT(tempDef);
-					// 	ERR(PF_CHECKOUT_PARAM(in_data,
-					// 		MAX_DUR_DISK_ID,
-					// 		ctime,
-					// 		in_data->time_step,
-					// 		in_data->time_scale,
-					// 		&tempDef));
-					// 	const PF_FpLong fmax_cache = tempDef.u.fs_d.value;
-					// 	while (ftime < fmax_cache) {
-					// 		if (!(findex > 0)) {
-					// 			break;
-					// 		}
-					// 		findex -= 1;
-					// 		ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
-					// 			in_data->effect_ref,
-					// 			SKELETON_GAIN,
-					// 			findex,
-					// 			&fkey_time,
-					// 			&fkey_time_scale));
-					// 		ftime = PF_FABS((ctime - fkey_time) / (double)fkey_time_scale);
-					// 	}
-					// }
-					// else {
-					// 	findex = 0;
-					// }
-
-					// 找到当前时间对应的最大累积量（即离当前时间最近的关键帧的 real_index 对应值）
-					A_long max_real_index = -1;
-					for (int i = 0;i < keyframes;i++) {
-						A_long key_time = 0;
-						A_u_long key_time_scale = 0;
-						ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
+					ERR(CalcLayerPack(
+						in_data,
+						out_data,
+						in_rect,
+						&MaxPossibleArea,
+						suites,
+						&layerPack,
+						&checkLayers
+					));
+					// 签出需要的 Layer
+					for (const CheckLayer &checkLayer : checkLayers) {
+						PF_CheckoutResult layer_result;
+						ERR(extra->cb->checkout_layer(
 							in_data->effect_ref,
-							SKELETON_GAIN,
-							i,
-							&key_time,
-							&key_time_scale));
-						if (ctime < key_time) {
-							break;
-						}
-						if (ctime - key_time > in_data->total_time) {
-							continue;
-						}
-
-						ERR(PF_CHECKOUT_PARAM(
-							in_data,
-							COUNT_DISK_ID,
-							key_time,
+							checkLayer.LayerSource,
+							checkLayer.storageId,
+							&req,
+							checkLayer.keyTime,
 							in_data->time_step,
 							in_data->time_scale,
-							&countDef));
-						const A_long count = countDef.u.fs_d.value;
-						max_real_index += count;
+							&layer_result));
 					}
-
-
-					A_long storage_num = 0;
-					A_long real_index = -1; // 真实累计量
-					for (int i = 0;i < keyframes;i++) {
-						A_long key_time = 0;
-						A_u_long key_time_scale = 0;
-						ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
-							in_data->effect_ref,
-							SKELETON_GAIN,
-							i,
-							&key_time,
-							&key_time_scale));
-						if (ctime < key_time) {
-							break;
-						}
-						if (ctime - key_time > in_data->total_time) {
-							continue;
-						}
-
-						ERR(PF_CHECKOUT_PARAM(
-							in_data,
-							COUNT_DISK_ID,
-							key_time,
-							in_data->time_step,
-							in_data->time_scale,
-							&countDef));
-						const A_long count = countDef.u.fs_d.value;
-						for(int iy = 0; iy < count; iy++){
-
-							RectByPoints rectPoints; // 记录该层的四个顶点位置
-							AEFX_CLR_STRUCT(rectPoints);
-							SetRectIntoRectByPoints(&in_result.result_rect, rectPoints);
-
-							real_index++;
-							// 如果在最大累积量之外，就不进行处理
-							if (max_real_index - maxcountDef.u.fs_d.value >= real_index) {
-								continue;
-							}
-							// 如果当前时间大于缓存值，就直接进入下一层
-							if (key_time_scale != 0) {
-								const PF_FpLong time = (ctime - key_time) / (double)key_time_scale;
-								const PF_FpLong max_cache = maxdurDef.u.fs_d.value;
-								if (time > max_cache) {
-									continue;
-								}
-							}
-
-							storage_num++;
-							LayerInfo storageInfo;
-							AEFX_CLR_STRUCT(storageInfo);
-							storageInfo.idL = storage_num;
-
-							PF_FloatMatrix matrix = { {
-								{1,0,0},
-								{0,1,0},
-								{0,0,1}
-								} 
-							};
-
-							ApplyTranslateMatrix(anchor_x, anchor_y, &matrix);
-
-							// ?????????
-							PF_ParamDef startTimeDef;
-							AEFX_CLR_STRUCT(startTimeDef);
-							ERR(PF_CHECKOUT_PARAM(
-								in_data,
-								START_TIME_DISK_ID,
-								key_time,
-								in_data->time_step,
-								in_data->time_scale,
-								&startTimeDef));
-							A_long const start_key_time = startTimeDef.u.fs_d.value * key_time_scale;
-
-							PF_ParamDef playrateDef;
-							AEFX_CLR_STRUCT(playrateDef);
-							ERR(PF_CHECKOUT_PARAM(
-								in_data,
-								PLAYRATE_DISK_ID,
-								key_time,
-								in_data->time_step,
-								in_data->time_scale,
-								&playrateDef));
-							PF_FpLong const playrate = playrateDef.u.fs_d.value;
-
-							PF_FpLong const pull_frame_time = (ctime - key_time) * playrate + start_key_time;
-							if (pull_frame_time < 0) {
-								continue;
-							}
-
-							bool is_now = true;
-							PF_ParamDef imageDef;
-							AEFX_CLR_STRUCT(imageDef);
-							ERR(PF_CHECKOUT_PARAM(
-								in_data,
-								SECOND_LAYER_DISK_ID,
-								pull_frame_time,
-								in_data->time_step,
-								in_data->time_scale,
-								&imageDef));
-							if (imageDef.u.ld.data) {
-								if (i + 1 < keyframes) {
-									A_long next_key_time = 0;
-									A_u_long next_key_time_scale = 0;
-									ERR(suites.ParamUtilsSuite3()->PF_KeyIndexToTime(
-										in_data->effect_ref,
-										SKELETON_GAIN,
-										i + 1,
-										&next_key_time,
-										&next_key_time_scale));
-									if (ctime >= next_key_time) {
-										is_now = false;
-									}
-								}
-							}
-
-							PF_CheckoutResult result;
-							AEFX_CLR_STRUCT(result);
-							if (is_now) {
-								// AEFX_CLR_STRUCT(imageDef);
-								extra->cb->checkout_layer(
-									in_data->effect_ref,
-									PF_Param_LAYER,
-									storage_num,
-									&req,
-									pull_frame_time,
-									in_data->time_step,
-									in_data->time_scale,
-									&result
-								);
-							} else {
-								extra->cb->checkout_layer(
-									in_data->effect_ref,
-									SECOND_LAYER_DISK_ID,
-									storage_num,
-									&req,
-									pull_frame_time,
-									in_data->time_step,
-									in_data->time_scale,
-									&result
-								);
-							}
-
-							A_Boolean is_flip = false;
-							if (isflipDef.u.bd.value && real_index % 2 == 1) {
-								is_flip = true;
-							}
-							PF_FpLong scale_size = 1;
-							if (isfrozenDef.u.bd.value) {
-								PF_ParamDef currentDef;
-								AEFX_CLR_STRUCT(currentDef);
-								ERR(PF_CHECKOUT_PARAM(
-									in_data,
-									SCALE_SIZE_DISK_ID,
-									key_time,
-									in_data->time_step,
-									in_data->time_scale,
-									&currentDef));
-								scale_size = currentDef.u.fs_d.value / 100;
-							}
-							else {
-								PF_ParamDef currentDef;
-								AEFX_CLR_STRUCT(currentDef);
-								ERR(PF_CHECKOUT_PARAM(
-									in_data,
-									SCALE_SIZE_DISK_ID,
-									ctime,
-									in_data->time_step,
-									in_data->time_scale,
-									&currentDef));
-								scale_size = currentDef.u.fs_d.value / 100;
-							}
-							ApplyScaleMatrix(
-								scale_size,
-								is_flip,
-								&matrix);
-							// else {
-							//	ERR(PF_COPY(&imageDef.u.ld, &cworld, NULL, NULL));
-							// }
-							PF_FpLong state = 0;
-							const A_long offset_count = offsetcountDef.u.fs_d.value;
-							if (isconDef.u.bd.value) {
-								PF_ParamDef ckey;
-								AEFX_CLR_STRUCT(ckey);
-								ERR(suites.ParamUtilsSuite3()->PF_CheckoutKeyframe(in_data->effect_ref,
-									SKELETON_GAIN,
-									i,
-									NULL,
-									NULL,
-									&ckey));
-								state = ckey.u.fs_d.value;
-								ERR(suites.ParamUtilsSuite3()->PF_CheckinKeyframe(
-									in_data->effect_ref,
-									&ckey));
-							}
-							else {
-								if (offset_count > 0) {
-									if (returnDef.u.bd.value) {
-										if (return2Def.u.bd.value) {
-											const int mid = real_index % (offset_count * 2 - 2);
-											if (mid < offset_count) {
-												state = mid;
-											}
-											else {
-												state = 2 * offset_count - 2 - mid;
-											}
-										}
-										else {
-											const int mid = real_index % (offset_count * 2);
-											if (mid < offset_count) {
-												state = mid;
-											}
-											else {
-												state = 2 * offset_count - mid - 1;
-											}
-										}
-									}
-									else {
-										state = real_index % offset_count;
-									}
-								}
-								else {
-									state = real_index;
-								}
-
-							}
-
-							A_long check_time = ctime;
-							if (isfrozenDef.u.bd.value) {
-								check_time = key_time;
-							}
-							//// 接下来进行矩阵的变换，顺序是缩放 -> 旋转 -> 位移
-							//// 累积缩放部分
-							PF_FpLong single_scale_size = 1;
-							PF_ParamDef currentDef;
-							AEFX_CLR_STRUCT(currentDef);
-							ERR(PF_CHECKOUT_PARAM(
-								in_data,
-								SINGLE_SCALE_DISK_ID,
-								check_time,
-								in_data->time_step,
-								in_data->time_scale,
-								&currentDef));
-							single_scale_size = currentDef.u.fs_d.value / 100;
-							ApplyScaleMatrix(pow(single_scale_size, state), false, &matrix);
-							//// 旋转部分
-							PF_FpLong angle = 0;
-							AEFX_CLR_STRUCT(currentDef);
-							ERR(PF_CHECKOUT_PARAM(
-								in_data,
-								ROTATE_DISK_ID,
-								check_time,
-								in_data->time_step,
-								in_data->time_scale,
-								&currentDef));
-							angle = FIX_2_FLOAT(currentDef.u.ad.value) * state;
-							ApplyAngleMatrix(angle, &matrix);
-							// 旋转缩放
-							ApplyScaleMatrix(rotatescaleDef.u.fs_d.value / 100, false, &matrix);
-							//// 位移部分
-							PF_FpLong x_offset = 0;
-							PF_FpLong y_offset = 0;
-							AEFX_CLR_STRUCT(currentDef);
-							ERR(PF_CHECKOUT_PARAM(
-								in_data,
-								OFFSET_DISK_ID,
-								check_time,
-								in_data->time_step,
-								in_data->time_scale,
-								&currentDef));
-							x_offset = FIX_2_FLOAT(currentDef.u.td.x_value) * state;
-							y_offset = FIX_2_FLOAT(currentDef.u.td.y_value) * state;
-							ApplyTranslateMatrix(x_offset, y_offset, &matrix);
-							// 移回去
-							ApplyTranslateMatrix(-anchor_x, -anchor_y, &matrix);
-
-							storageInfo.matrix = matrix;
-
-							MultiMatrixForRectByPoints(&matrix, rectPoints);
-							PF_Rect max_rect;
-							AEFX_CLR_STRUCT(max_rect);
-							GetMaxRectWithRectByPoints(rectPoints, &max_rect);
-							UnionLRect(&max_rect, &MaxPossibleArea);
-
-							layerPack.pack.push_back(storageInfo);
-						}
-					}
-					// suites.HandleSuite1()->host_resize_handle(sizeof(layerPack),&infoH);
-					infoP->xfer = layerPack.xfer;
 					infoP->pack = layerPack.pack;
+					infoP->xfer = layerPack.xfer;
 					infoP->MaxRect = MaxPossibleArea;
-
-					PF_FpLong ori_x, ori_y;
-
 					UnionLRect(&in_result.result_rect, &extra->output->result_rect);
 					UnionLRect(&MaxPossibleArea, &extra->output->result_rect);
 					UnionLRect(&in_result.max_result_rect, &extra->output->max_result_rect);
@@ -1369,8 +1172,19 @@ SmartRenderCPU(
 
 		if (!err && output_worldP) {
 
+			// 如果 &infoP->MaxRect 存在负坐标，由于最左上角原点位置改变了，matrix 也需要相应改变
+			PF_FpLong offsetX, offsetY = 0;
+			if (infoP->MaxRect.left < 0) {
+				offsetX = -infoP->MaxRect.left;
+				infoP->MaxRect.right += -infoP->MaxRect.left;
+			}
+			if (infoP->MaxRect.top < 0) {
+				offsetY = -infoP->MaxRect.top;
+				infoP->MaxRect.bottom += -infoP->MaxRect.top;
+			}
+
 			const PF_Pixel transparent_black = { 0, 0, 0, 0 };
-			ERR(PF_FILL(&transparent_black, &output_worldP->extent_hint, output_worldP));
+			ERR(PF_FILL(&transparent_black, &infoP->MaxRect, output_worldP));
 			PF_CompositeMode composite_mode;
 			AEFX_CLR_STRUCT(composite_mode);
 			composite_mode.opacity = 255;
@@ -1379,15 +1193,8 @@ SmartRenderCPU(
 			for (LayerInfo& layer : infoP->pack) {
 				ERR((extra->cb->checkout_layer_pixels(in_data->effect_ref, layer.idL, &middle_worldP)));
 
-				// 如果 &infoP->MaxRect 存在负坐标，由于最左上角原点位置改变了，matrix 也需要相应改变
-				if (infoP->MaxRect.left < 0) {
-					layer.matrix.mat[2][0] += -infoP->MaxRect.left;
-					infoP->MaxRect.right += -infoP->MaxRect.left;
-				}
-				if (infoP->MaxRect.top < 0) {
-					layer.matrix.mat[2][1] += -infoP->MaxRect.top;
-					infoP->MaxRect.bottom += -infoP->MaxRect.top;
-				}
+				layer.matrix.mat[2][0] += offsetX;
+				layer.matrix.mat[2][1] += offsetY;
 
 				ERR(in_data->utils->transform_world(
 					in_data->effect_ref,
@@ -1507,6 +1314,15 @@ EffectMain(
 									out_data,
 									params,
 									output);
+				break;
+
+			case PF_Cmd_FRAME_SETUP:
+
+				err = FrameSetup(	in_data,
+									out_data,
+									params,
+									output
+								);
 				break;
 
 			case PF_Cmd_RENDER:

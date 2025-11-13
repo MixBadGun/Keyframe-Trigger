@@ -67,7 +67,7 @@ typedef short int			int16;
 
 #define	PLUGIN_MAJOR_VERSION	2
 #define	PLUGIN_MINOR_VERSION	5
-#define	PLUGIN_BUG_VERSION		2
+#define	PLUGIN_BUG_VERSION		3
 #define	PLUGIN_STAGE_VERSION	PF_Stage_RELEASE
 #define	PLUGIN_BUILD_VERSION	1
 
@@ -166,6 +166,24 @@ typedef struct LayerPack {
 	PF_Rect    MaxRect;
 	std::vector<LayerInfo> pack;
 } LayerPack;
+
+typedef struct CheckLayer {
+	PF_ParamType 	LayerSource;
+	A_long 	 		storageId;
+	PF_FpLong		keyTime;
+} CheckLayer; // 需要签出的图层包
+
+typedef struct CombinedLayerInfo {
+	PF_ParamType 	LayerSource;
+	PF_FpLong		keyTime;
+	PF_FloatMatrix 	matrix;
+} CombinedLayerInfo;
+
+typedef struct CombinedLayerPack {
+	A_long     xfer;
+	PF_Rect    MaxRect;
+	std::vector<CombinedLayerInfo> pack;
+} CombinedLayerPack;
 
 typedef struct RectByPoints {
 	PF_Point topLeft;
