@@ -67,7 +67,7 @@ typedef short int			int16;
 
 #define	PLUGIN_MAJOR_VERSION	2
 #define	PLUGIN_MINOR_VERSION	5
-#define	PLUGIN_BUG_VERSION		3
+#define	PLUGIN_BUG_VERSION		4
 #define	PLUGIN_STAGE_VERSION	PF_Stage_RELEASE
 #define	PLUGIN_BUILD_VERSION	1
 

@@ -75,7 +75,7 @@ GlobalSetup (
 							PF_OutFlag_I_EXPAND_BUFFER;
 
 	out_data->out_flags2 |= PF_OutFlag2_SUPPORTS_THREADED_RENDERING |
-							// PF_OutFlag2_SUPPORTS_SMART_RENDER |
+							PF_OutFlag2_SUPPORTS_SMART_RENDER |
 							PF_OutFlag2_FLOAT_COLOR_AWARE;
 							// PF_OutFlag2_SUPPORTS_GPU_RENDER_F32 | 
 							// PF_OutFlag2_SUPPORTS_DIRECTX_RENDERING;
