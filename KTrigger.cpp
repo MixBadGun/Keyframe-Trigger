@@ -75,7 +75,7 @@ GlobalSetup (
 							PF_OutFlag_I_EXPAND_BUFFER;
 
 	out_data->out_flags2 |= PF_OutFlag2_SUPPORTS_THREADED_RENDERING |
-							PF_OutFlag2_SUPPORTS_SMART_RENDER |
+							// PF_OutFlag2_SUPPORTS_SMART_RENDER |
 							PF_OutFlag2_FLOAT_COLOR_AWARE;
 							// PF_OutFlag2_SUPPORTS_GPU_RENDER_F32 | 
 							// PF_OutFlag2_SUPPORTS_DIRECTX_RENDERING;
@@ -985,14 +985,13 @@ Render(
 	CombinedLayerPack* infoP = reinterpret_cast<CombinedLayerPack*>(suites.HandleSuite1()->host_lock_handle(reinterpret_cast<PF_Handle>(out_data->frame_data)));
 
 	// 由于最左上角原点位置改变了，Rect 也需要相应改变
-	A_long offset_left, offset_top = 0;
+	A_long offset_left = -in_data->output_origin_x;
+    A_long offset_top = -in_data->output_origin_y;
 	if(infoP->MaxRect.left < 0){
-		offset_left = infoP->MaxRect.left;
 		infoP->MaxRect.right += -infoP->MaxRect.left;
 		infoP->MaxRect.left += -infoP->MaxRect.left;
 	}
 	if(infoP->MaxRect.top < 0){
-		offset_top = infoP->MaxRect.top;
 		infoP->MaxRect.bottom += -infoP->MaxRect.top;
 		infoP->MaxRect.top += -infoP->MaxRect.top;
 	}
